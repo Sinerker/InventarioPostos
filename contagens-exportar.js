@@ -50,9 +50,10 @@ async function exportarContagens() {
     const linhas = contagens.map((r) => {
       let dStr = "", hStr = "";
       if (r.dataHora) {
-        const partes = r.dataHora.split("T");
-        dStr = partes[0];
-        hStr = (partes[1] || "").split(".")[0];
+        const dt = new Date(r.dataHora);
+        const pad = (n) => String(n).padStart(2, "0");
+        dStr = `${dt.getFullYear()}-${pad(dt.getMonth() + 1)}-${pad(dt.getDate())}`;
+        hStr = `${pad(dt.getHours())}:${pad(dt.getMinutes())}:${pad(dt.getSeconds())}`;
       }
       return [
         dStr, hStr,
