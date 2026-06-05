@@ -1,0 +1,736 @@
+/* =============================================
+   RESET & BASE
+   ============================================= */
+*, *::before, *::after {
+  margin: 0; padding: 0;
+  box-sizing: border-box;
+  -webkit-tap-highlight-color: transparent;
+}
+
+:root {
+  --clr-primary: #1a6fd4;
+  --clr-primary-dark: #1558ab;
+  --clr-danger: #d93025;
+  --clr-success: #1e8c45;
+  --clr-warning-bg: #fff3cd;
+  --clr-warning-border: #e6c000;
+  --clr-warning-text: #7a5800;
+
+  --clr-bg: #f0f2f5;
+  --clr-surface: #ffffff;
+  --clr-surface-2: #f8f9fa;
+  --clr-border: #dadce0;
+
+  --clr-text: #202124;
+  --clr-text-secondary: #5f6368;
+  --clr-text-on-primary: #ffffff;
+
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+  --shadow-sm: 0 1px 3px rgba(0,0,0,.10);
+  --shadow-md: 0 4px 12px rgba(0,0,0,.12);
+  --touch-min: 48px;
+  --font: 'Segoe UI', system-ui, -apple-system, sans-serif;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --clr-bg: #111318;
+    --clr-surface: #1e2128;
+    --clr-surface-2: #282c34;
+    --clr-border: #3c4048;
+    --clr-text: #e3e5e8;
+    --clr-text-secondary: #9aa0aa;
+    --clr-primary: #4da3ff;
+    --clr-primary-dark: #3b8fe0;
+    --clr-danger: #f2705f;
+    --clr-success: #4caf72;
+    --clr-warning-bg: #3a2e00;
+    --clr-warning-border: #a88000;
+    --clr-warning-text: #ffd54f;
+  }
+}
+
+html { font-size: 16px; -webkit-text-size-adjust: 100%; }
+
+body {
+  font-family: var(--font);
+  background: var(--clr-bg);
+  color: var(--clr-text);
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+/* =============================================
+   HEADER
+   ============================================= */
+.cnt-header {
+  width: 100%;
+  background: var(--clr-primary);
+  color: var(--clr-text-on-primary);
+  display: flex;
+  align-items: center;
+  gap: .5rem;
+  padding: 0 .75rem;
+  height: 56px;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  box-shadow: var(--shadow-md);
+}
+
+.cnt-back {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  color: #fff;
+  flex-shrink: 0;
+  transition: background .15s;
+}
+.cnt-back:hover { background: rgba(255,255,255,.15); }
+
+.cnt-header-info {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.cnt-lote-nome {
+  font-size: .95rem;
+  font-weight: 700;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.cnt-lote-sub {
+  font-size: .75rem;
+  opacity: .8;
+}
+
+.cnt-header-actions {
+  display: flex;
+  align-items: center;
+  gap: .25rem;
+  flex-shrink: 0;
+}
+
+.cnt-icon-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: transparent;
+  border: none;
+  color: #fff;
+  cursor: pointer;
+  transition: background .15s;
+}
+.cnt-icon-btn:hover { background: rgba(255,255,255,.15); }
+
+/* =============================================
+   MAIN
+   ============================================= */
+.cnt-main {
+  width: 100%;
+  max-width: 600px;
+  padding: .75rem;
+  display: flex;
+  flex-direction: column;
+  gap: .75rem;
+}
+
+/* =============================================
+   CARD
+   ============================================= */
+.cnt-card {
+  background: var(--clr-surface);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--clr-border);
+  padding: .85rem;
+  box-shadow: var(--shadow-sm);
+  display: flex;
+  flex-direction: column;
+  gap: .5rem;
+}
+
+/* =============================================
+   RADIO TIPO CONTAGEM
+   ============================================= */
+.cnt-radio-group {
+  display: flex;
+  gap: .5rem;
+}
+
+.cnt-radio-label {
+  flex: 1;
+  display: flex;
+}
+
+.cnt-radio-label input[type="radio"] {
+  position: absolute;
+  opacity: 0;
+  width: 0; height: 0;
+}
+
+.cnt-radio-pill {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: var(--touch-min);
+  border-radius: var(--radius-sm);
+  border: 2px solid var(--clr-border);
+  background: var(--clr-surface);
+  color: var(--clr-text-secondary);
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all .15s;
+  user-select: none;
+}
+
+.cnt-radio-label input[type="radio"]:checked + .cnt-radio-pill {
+  background: var(--clr-primary);
+  border-color: var(--clr-primary);
+  color: #fff;
+}
+
+/* =============================================
+   CAMPOS
+   ============================================= */
+.cnt-label {
+  font-size: .78rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: .05em;
+  color: var(--clr-text-secondary);
+}
+
+.cnt-input, .cnt-select {
+  width: 100%;
+  min-height: var(--touch-min);
+  padding: .6rem .8rem;
+  border-radius: var(--radius-sm);
+  border: 1.5px solid var(--clr-border);
+  background: var(--clr-surface-2);
+  color: var(--clr-text);
+  font-size: 1rem;
+  font-family: var(--font);
+  transition: border-color .15s, box-shadow .15s;
+}
+
+.cnt-input:focus, .cnt-select:focus {
+  outline: 3px solid var(--clr-primary);
+  outline-offset: 1px;
+  border-color: var(--clr-primary);
+}
+
+.cnt-input--big {
+  font-size: 1.1rem;
+}
+
+.cnt-input--qty {
+  font-size: 1.3rem;
+  font-weight: 700;
+  text-align: center;
+  letter-spacing: .02em;
+}
+
+/* Localização em linha */
+.cnt-field-row {
+  display: flex;
+  gap: .5rem;
+}
+
+.cnt-field {
+  display: flex;
+  flex-direction: column;
+  gap: .3rem;
+}
+
+.cnt-field-row .cnt-field:first-child {
+  flex: 2;
+}
+.cnt-field-row .cnt-field:not(:first-child) {
+  flex: 1;
+}
+
+/* =============================================
+   RESULTADO DA BUSCA
+   ============================================= */
+.cnt-resultado {
+  min-height: 0;
+  transition: all .2s;
+}
+
+.cnt-produto-card {
+  padding: .75rem;
+  border-radius: var(--radius-sm);
+  border: 1.5px solid var(--clr-danger);
+  background: var(--clr-surface-2);
+}
+
+.cnt-produto-seq {
+  font-size: .82rem;
+  font-weight: 700;
+  color: var(--clr-primary);
+}
+
+.cnt-produto-desc {
+  font-size: 1rem;
+  font-weight: 600;
+  margin: .2rem 0;
+  color: var(--clr-text);
+}
+
+.cnt-produto-cod {
+  font-size: .88rem;
+  color: var(--clr-danger);
+  font-weight: 700;
+}
+
+.cnt-produto-emb {
+  font-size: .82rem;
+  color: var(--clr-text-secondary);
+  margin-top: 2px;
+}
+
+.cnt-error-msg {
+  color: var(--clr-danger);
+  font-size: .9rem;
+  font-weight: 600;
+  padding: .5rem;
+}
+
+/* Lista de resultados múltiplos */
+.cnt-result-list {
+  list-style: none;
+  border: 1px solid var(--clr-border);
+  border-radius: var(--radius-sm);
+  max-height: 220px;
+  overflow-y: auto;
+}
+
+.cnt-result-item {
+  padding: .7rem .85rem;
+  border-bottom: 1px solid var(--clr-border);
+  cursor: pointer;
+  transition: background .12s;
+}
+
+.cnt-result-item:last-child { border-bottom: none; }
+
+.cnt-result-item:active {
+  background: var(--clr-border);
+}
+
+.cnt-result-item-desc {
+  font-size: .95rem;
+  font-weight: 600;
+  color: var(--clr-text);
+}
+
+.cnt-result-item-info {
+  font-size: .78rem;
+  color: var(--clr-text-secondary);
+  margin-top: 2px;
+}
+
+/* =============================================
+   QUANTIDADE + TOGGLE
+   ============================================= */
+.cnt-qty-row {
+  display: flex;
+  align-items: flex-end;
+  gap: .75rem;
+}
+
+.cnt-qtde1-wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: .3rem;
+  flex-shrink: 0;
+}
+
+/* Toggle switch */
+.cnt-toggle {
+  position: relative;
+  cursor: pointer;
+  display: block;
+}
+
+.cnt-toggle input {
+  position: absolute;
+  opacity: 0;
+  width: 0; height: 0;
+}
+
+.cnt-toggle-track {
+  display: block;
+  width: 52px;
+  height: 30px;
+  border-radius: 30px;
+  background: var(--clr-border);
+  transition: background .2s;
+  position: relative;
+}
+
+.cnt-toggle input:checked + .cnt-toggle-track {
+  background: var(--clr-primary);
+}
+
+.cnt-toggle-thumb {
+  position: absolute;
+  top: 3px; left: 3px;
+  width: 24px; height: 24px;
+  border-radius: 50%;
+  background: #fff;
+  transition: transform .2s;
+  box-shadow: 0 1px 3px rgba(0,0,0,.25);
+}
+
+.cnt-toggle input:checked ~ .cnt-toggle-track .cnt-toggle-thumb {
+  transform: translateX(22px);
+}
+
+/* =============================================
+   ÚLTIMO CONTADO
+   ============================================= */
+.cnt-ultimo {
+  background: #e8f0fe;
+  border: 1px solid #aecbfa;
+  border-radius: var(--radius-md);
+  padding: .85rem;
+  color: #1a3563;
+}
+
+@media (prefers-color-scheme: dark) {
+  .cnt-ultimo {
+    background: #1a2f52;
+    border-color: #2a4880;
+    color: #7ab4ff;
+  }
+}
+
+.cnt-ultimo-title {
+  font-size: .75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: .06em;
+  margin-bottom: .4rem;
+  opacity: .7;
+}
+
+.cnt-ultimo-info {
+  font-size: .9rem;
+  line-height: 1.5;
+}
+
+.cnt-ultimo-qty {
+  font-size: 1.1rem;
+  font-weight: 700;
+  margin-top: .3rem;
+}
+
+/* =============================================
+   EXPORTAR
+   ============================================= */
+.cnt-export-wrap {
+  display: flex;
+  padding-bottom: 1rem;
+}
+
+.cnt-export-btn {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: .5rem;
+  min-height: var(--touch-min);
+  padding: .7rem 1.2rem;
+  border-radius: var(--radius-sm);
+  border: none;
+  background: var(--clr-primary);
+  color: #fff;
+  font-size: 1rem;
+  font-weight: 700;
+  font-family: var(--font);
+  cursor: pointer;
+  transition: background .15s, transform .1s;
+}
+
+.cnt-export-btn:active { transform: scale(.97); }
+.cnt-export-btn:hover { background: var(--clr-primary-dark); }
+
+/* =============================================
+   MODAL FORA DO LOTE
+   ============================================= */
+.fora-lote-overlay {
+  position: fixed;
+  top: 70px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 2000;
+  pointer-events: none;
+}
+
+.fora-lote-box {
+  display: flex;
+  align-items: center;
+  gap: .75rem;
+  background: var(--clr-warning-bg);
+  border: 1.5px solid var(--clr-warning-border);
+  color: var(--clr-warning-text);
+  border-radius: var(--radius-md);
+  padding: .85rem 1rem;
+  box-shadow: var(--shadow-md);
+  min-width: 240px;
+  max-width: 92vw;
+  animation: slideDown .2s ease;
+}
+
+@keyframes slideDown {
+  from { opacity: 0; transform: translateY(-12px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.fora-lote-title {
+  font-weight: 700;
+  font-size: .95rem;
+}
+
+.fora-lote-sub {
+  font-size: .8rem;
+  margin-top: 2px;
+  opacity: .8;
+}
+
+/* =============================================
+   MODAL CONTAGENS
+   ============================================= */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,.55);
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+  backdrop-filter: blur(2px);
+}
+
+.modal-box {
+  background: var(--clr-surface);
+  border-radius: var(--radius-lg);
+  padding: 1.5rem;
+  width: 100%;
+  max-width: 360px;
+  box-shadow: var(--shadow-md);
+}
+
+.modal-box--large {
+  max-width: 600px;
+  max-height: 85vh;
+  display: flex;
+  flex-direction: column;
+  padding: 0;
+  overflow: hidden;
+}
+
+.modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: .9rem 1.25rem;
+  border-bottom: 1px solid var(--clr-border);
+  flex-shrink: 0;
+}
+
+.modal-header h3 {
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--clr-text);
+}
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: .75rem;
+  font-weight: 700;
+  min-width: 22px;
+  height: 22px;
+  padding: 0 6px;
+  border-radius: 20px;
+}
+
+.badge--blue {
+  background: #e8f0fe;
+  color: #1a6fd4;
+}
+
+@media (prefers-color-scheme: dark) {
+  .badge--blue { background: #1a3563; color: #7ab4ff; }
+}
+
+/* Item de contagem no modal */
+.cnt-log-item {
+  padding: .6rem .75rem;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--clr-border);
+  margin-bottom: .5rem;
+  font-size: .85rem;
+  background: var(--clr-surface-2);
+}
+
+.cnt-log-desc {
+  font-weight: 600;
+  color: var(--clr-text);
+}
+
+.cnt-log-info {
+  color: var(--clr-text-secondary);
+  font-size: .78rem;
+  margin-top: 2px;
+}
+
+.cnt-log-qty {
+  font-weight: 700;
+  color: var(--clr-primary);
+}
+
+/* =============================================
+   FOCO TRAVADO — tocar fora não perde foco
+   A lógica está no JS; esse CSS é complementar
+   ============================================= */
+
+/* =============================================
+   COMPACTO — coletores (≤ 480px)
+   ============================================= */
+@media (max-width: 480px) {
+  html { font-size: 14px; }
+
+  :root { --touch-min: 42px; }
+
+  /* Header */
+  .cnt-header {
+    height: 46px;
+    padding: 0 .35rem;
+  }
+
+  .cnt-back,
+  .cnt-icon-btn {
+    width: 34px;
+    height: 34px;
+  }
+
+  .cnt-lote-nome { font-size: .85rem; }
+  .cnt-lote-sub  { font-size: .68rem; }
+
+  /* Layout principal */
+  .cnt-main {
+    padding: .4rem;
+    gap: .4rem;
+  }
+
+  /* Cards */
+  .cnt-card {
+    padding: .55rem .6rem;
+    gap: .3rem;
+  }
+
+  /* Tipo contagem */
+  .cnt-radio-pill {
+    font-size: .85rem;
+    min-height: 38px;
+  }
+
+  /* Labels */
+  .cnt-label {
+    font-size: .68rem;
+    letter-spacing: .03em;
+  }
+
+  /* Inputs e selects */
+  .cnt-input,
+  .cnt-select {
+    min-height: var(--touch-min);
+    padding: .4rem .6rem;
+    font-size: .9rem;
+  }
+
+  .cnt-input--big { font-size: .95rem; }
+
+  .cnt-input--qty {
+    font-size: 1.1rem;
+  }
+
+  /* Localização */
+  .cnt-field-row { gap: .3rem; }
+
+  /* Resultado busca */
+  .cnt-resultado { font-size: .88rem; }
+
+  .cnt-result-list  { max-height: 150px; }
+
+  .cnt-result-item  { padding: .5rem .6rem; }
+
+  .cnt-result-item-desc { font-size: .85rem; }
+  .cnt-result-item-info { font-size: .7rem; }
+
+  /* Card produto */
+  .cnt-produto-desc { font-size: .9rem; }
+  .cnt-produto-cod  { font-size: .82rem; }
+  .cnt-produto-emb  { font-size: .76rem; }
+
+  /* Toggle Qtde 1 */
+  .cnt-toggle-track {
+    width: 44px;
+    height: 26px;
+  }
+
+  .cnt-toggle-thumb {
+    width: 20px;
+    height: 20px;
+  }
+
+  .cnt-toggle input:checked ~ .cnt-toggle-track .cnt-toggle-thumb {
+    transform: translateX(18px);
+  }
+
+  /* Último contado */
+  .cnt-ultimo { padding: .55rem .65rem; }
+  .cnt-ultimo-info { font-size: .8rem; }
+  .cnt-ultimo-qty  { font-size: .9rem; }
+
+  /* Exportar */
+  .cnt-export-btn {
+    font-size: .88rem;
+    min-height: 40px;
+  }
+
+  /* Modal contagens */
+  .modal-overlay { padding: .3rem; }
+
+  .modal-box--large { max-height: 92vh; }
+
+  .modal-header { padding: .65rem .9rem; }
+
+  .modal-header h3 { font-size: .92rem; }
+
+  .cnt-log-item { font-size: .78rem; padding: .5rem .65rem; }
+
+  .cnt-log-info { font-size: .7rem; }
+}

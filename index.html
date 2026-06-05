@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Inventário</title>
+  <link rel="icon" href="iconInventario.png" type="image/png"/>
+  <link rel="stylesheet" href="./style.css"/>
+</head>
+<body>
+
+  <header class="app-header">
+    <div class="header-inner">
+      <img src="iconInventario.webp" alt="Inventário" class="header-icon"/>
+      <h1>Inventário</h1>
+    </div>
+  </header>
+
+  <main class="main-content">
+
+    <!-- Usuário e Loja -->
+    <section class="card">
+      <div class="usuario-loja-row">
+        <div class="field-group">
+          <label for="usuario">Usuário</label>
+          <select id="usuario" name="usuario">
+            <option value="Alex">Alex</option>
+            <option value="João">João</option>
+            <option value="Luciano">Luciano</option>
+            <option value="Moseley">Moseley</option>
+          </select>
+        </div>
+        <div class="field-group">
+          <label for="loja">Loja</label>
+          <select id="loja" name="loja">
+            <option value="001-DZ9">001-DZ9</option>
+            <option value="002-VICENTE">002-VICENTE</option>
+            <option value="003-NOCA">003-NOCA</option>
+            <option value="004-GETULIO">004-GETULIO</option>
+            <option value="005-NEW">005-NEW</option>
+            <option value="007-IVASKO_SMS">007-IVASKO_SMS</option>
+            <option value="099-ROLHA">099-ROLHA</option>
+            <option value="100-CD">100-CD</option>
+            <option value="101-MARIANO_IRATI">101-MARIANO_IRATI</option>
+            <option value="102-MARIANO_SMS">102-MARIANO_SMS</option>
+            <option value="103-MARIANO_UVARANAS">103-MARIANO_UVARANAS</option>
+            <option value="105-MARIANO_CARA">105-MARIANO_CARA</option>
+            <option value="106-MARIANO_REBESCO">106-MARIANO_REBESCO</option>
+            <option value="300-TRAJANO">300-TRAJANO</option>
+            <option value="301-VICENTE">301-VICENTE</option>
+            <option value="302-MOTIVAÇÃO_TB">302-MOTIVAÇÃO_TB</option>
+            <option value="303-CALED_IMBITUVA">303-CALED_IMBITUVA</option>
+            <option value="304-POSECOL_IRATI">304-POSECOL_IRATI</option>
+            <option value="305-ALADIM_TB">305-ALADIM_TB</option>
+            <option value="308-PITANGA">308-PITANGA</option>
+            <option value="309-SALDANHA">309-SALDANHA</option>
+            <option value="310-PRUDE">310-PRUDE</option>
+            <option value="311-MASTER">311-MASTER</option>
+            <option value="312-P.MANSA">312-P.MANSA</option>
+            <option value="313-CAROLINE">313-CAROLINE</option>
+            <option value="314-VERNALHA">314-VERNALHA</option>
+            <option value="315-P.CENTRAL">315-P.CENTRAL</option>
+            <option value="316-CALED_XV">316-CALED_XV</option>
+            <option value="317-POSECOL_UVARANAS">317-POSECOL_UVARANAS</option>
+            <option value="318-KENNEDY">318-KENNEDY</option>
+            <option value="319-SFELIC">319-SFELIC</option>
+            <option value="320-CARA-CARA">320-CARA-CARA</option>
+            <option value="321-BOEING">321-BOEING</option>
+            <option value="397-CAIOBA">397-CAIOBA</option>
+            <option value="398-PALMEIRA">398-PALMEIRA</option>
+          </select>
+        </div>
+      </div>
+      <div class="field-group description-group">
+        <label for="descricao">Descrição do Lote</label>
+        <input type="text" id="descricao" name="descricao" placeholder="Ex: Contagem geral – Bebidas" maxlength="120" autocomplete="off"/>
+      </div>
+    </section>
+
+    <!-- Árvore de categorias -->
+    <section class="card" id="tree-container">
+      <h2>Selecione as categorias</h2>
+    </section>
+
+    <!-- Botões de ação -->
+    <div class="action-buttons">
+      <button id="criar-lote" class="btn btn-primary">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg>
+        Criar Lote
+      </button>
+      <button id="limpar-banco" class="btn btn-danger" style="display:none">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6M14 11v6"/></svg>
+        Limpar Tudo
+      </button>
+    </div>
+
+    <!-- Lista de lotes existentes -->
+    <section id="lotes-section" style="display:none">
+      <h2 class="section-title">Lotes criados</h2>
+      <div id="lotes-lista"></div>
+    </section>
+
+  </main>
+
+  <!-- Modal de confirmação -->
+  <div id="confirm-modal" class="modal-overlay" style="display:none">
+    <div class="modal-box">
+      <h3 id="modal-title">Confirmação</h3>
+      <p id="modal-message">Tem certeza?</p>
+      <div class="modal-actions">
+        <button id="confirm-no" class="btn btn-secondary">Cancelar</button>
+        <button id="confirm-yes" class="btn btn-danger">Confirmar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal de produtos do lote -->
+  <div id="produtos-modal" class="modal-overlay" style="display:none">
+    <div class="modal-box modal-box--large">
+      <div class="modal-header">
+        <h3 id="produtos-modal-title">Produtos do Lote</h3>
+        <button id="produtos-modal-close" class="btn-icon" aria-label="Fechar">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </button>
+      </div>
+      <div class="modal-tabs">
+        <button class="tab-btn active" data-tab="dentro">Dentro do lote <span id="count-dentro" class="badge badge--blue">0</span></button>
+        <button class="tab-btn" data-tab="fora">Fora do lote <span id="count-fora" class="badge badge--gray">0</span></button>
+      </div>
+      <div id="tab-dentro" class="tab-content active">
+        <div id="lista-dentro"></div>
+      </div>
+      <div id="tab-fora" class="tab-content">
+        <div id="lista-fora"></div>
+      </div>
+    </div>
+  </div>
+
+  <script src="./script.js"></script>
+  <script src="./lote.js"></script>
+</body>
+</html>
