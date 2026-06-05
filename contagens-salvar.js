@@ -501,7 +501,11 @@ async function onConfirmarQuantidade() {
     codacesso:    prod.CODACESSO,
     qtdeembalagem:prod.QTDEMBALAGEM,
     quantidade:   qtd,
-    dataHora:     new Date().toISOString(),
+    dataHora:     (() => {
+      const d = new Date();
+      const pad = (n) => String(n).padStart(2, "0");
+      return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
+    })(),
   };
 
   try {
