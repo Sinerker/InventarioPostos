@@ -356,7 +356,11 @@ document.addEventListener("DOMContentLoaded", () => {
       return;
     }
 
-    const nomeLote = `${usuario}_${loja}`;
+    // Inclui descrição na chave — permite múltiplos lotes por usuário/loja
+    // com descrições diferentes, sem perder dados do lote anterior
+    const nomeLote = descricao
+      ? `${usuario}_${loja} | ${descricao}`
+      : `${usuario}_${loja}`;
 
     // Fix: avisa o usuário antes de sobrescrever um lote existente
     const existe = await loteExiste(nomeLote);
