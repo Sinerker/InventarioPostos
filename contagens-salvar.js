@@ -5,6 +5,7 @@
 let produtosLote = [];
 let codigosNoLoteSet = new Set(); // códigos dentro do lote
 let loteAtual = null;
+let produtoSelecionado = null; // produto atualmente exibido na tela
 
 // -----------------------------------------------
 // Sons via Web Audio API
@@ -28,7 +29,6 @@ function tocarSom(tipo) {
     osc.start(audioCtx.currentTime);
     osc.stop(audioCtx.currentTime + 0.25);
   } else {
-    // erro
     osc.type = "sawtooth";
     osc.frequency.setValueAtTime(220, audioCtx.currentTime);
     osc.frequency.setValueAtTime(180, audioCtx.currentTime + 0.1);
@@ -40,30 +40,33 @@ function tocarSom(tipo) {
 }
 
 // -----------------------------------------------
-// IndexedDB helpers
+// IndexedDB — versão 2 com índice em loteNome
+// Compatível com lote.js que também abre versão 2
 // -----------------------------------------------
-function openDB(name) {
+function abrirDB() {
   return new Promise((resolve, reject) => {
-    const req = indexedDB.open(name);
-    req.onsuccess = () => resolve(req.result);
-    req.onerror = (e) => reject(e.target.error);
-  });
-}
+    const req = indexedDB.open("InventarioDB", 2);
 
-async function ensureContagensStore() {
-  const db = await openDB("InventarioDB");
-  if (db.objectStoreNames.contains("contagens")) { db.close(); return; }
-  const v = db.version + 1;
-  db.close();
-  return new Promise((resolve, reject) => {
-    const req = indexedDB.open("InventarioDB", v);
     req.onupgradeneeded = (e) => {
-      const d = e.target.result;
-      if (!d.objectStoreNames.contains("contagens")) {
-        d.createObjectStore("contagens", { keyPath: "id", autoIncrement: true });
+      const db = e.target.result;
+
+      if (!db.objectStoreNames.contains("lotes")) {
+        db.createObjectStore("lotes", { keyPath: "nome" });
+      }
+
+      if (!db.objectStoreNames.contains("contagens")) {
+        const store = db.createObjectStore("contagens", { keyPath: "id", autoIncrement: true });
+        store.createIndex("loteNome", "loteNome", { unique: false });
+      } else if (e.oldVersion < 2) {
+        // Migração v1 → v2: adiciona índice na store existente
+        const store = e.target.transaction.objectStore("contagens");
+        if (!store.indexNames.contains("loteNome")) {
+          store.createIndex("loteNome", "loteNome", { unique: false });
+        }
       }
     };
-    req.onsuccess = (e) => { e.target.result.close(); resolve(); };
+
+    req.onsuccess = (e) => resolve(e.target.result);
     req.onerror = (e) => reject(e.target.error);
   });
 }
@@ -72,10 +75,8 @@ async function ensureContagensStore() {
 // Carrega produtos do lote ativo
 // -----------------------------------------------
 async function carregarProdutosDoLote() {
-  // Pega o lote ativo da sessionStorage (definido ao criar/selecionar lote)
   const loteNome = sessionStorage.getItem("loteAtivo");
-
-  const db = await openDB("InventarioDB");
+  const db = await abrirDB();
   if (!db.objectStoreNames.contains("lotes")) { db.close(); return; }
 
   return new Promise((resolve) => {
@@ -85,16 +86,13 @@ async function carregarProdutosDoLote() {
       db.close();
       const lotes = req.result || [];
       let lote = loteNome ? lotes.find((l) => l.nome === loteNome) : null;
-      if (!lote && lotes.length > 0) {
-        lote = lotes[lotes.length - 1]; // fallback: último lote
-      }
+      if (!lote && lotes.length > 0) lote = lotes[lotes.length - 1]; // fallback: último lote
       if (!lote) { resolve(); return; }
 
       loteAtual = { nome: lote.nome, usuario: lote.usuario, loja: lote.loja };
       produtosLote = lote.produtos || [];
       codigosNoLoteSet = new Set((lote.codigosNoLote || produtosLote.map((p) => String(p.CODACESSO).trim())));
 
-      // Atualiza header
       const headerNome = document.getElementById("lote-nome-header");
       if (headerNome) headerNome.textContent = lote.nome;
 
@@ -108,13 +106,15 @@ async function carregarProdutosDoLote() {
 async function atualizarContagensHeader() {
   if (!loteAtual) return;
   try {
-    const db = await openDB("InventarioDB");
+    const db = await abrirDB();
     if (!db.objectStoreNames.contains("contagens")) { db.close(); return; }
     const tx = db.transaction(["contagens"], "readonly");
-    const req = tx.objectStore("contagens").getAll();
+    const store = tx.objectStore("contagens");
+    // Usa índice para contar só as contagens do lote atual
+    const req = store.index("loteNome").count(loteAtual.nome);
     req.onsuccess = () => {
       db.close();
-      const total = (req.result || []).filter((r) => r.loteNome === loteAtual.nome).length;
+      const total = req.result || 0;
       const el = document.getElementById("lote-contagens-header");
       if (el) el.textContent = `${total} contagem${total !== 1 ? "s" : ""}`;
       const badge = document.getElementById("total-contagens-badge");
@@ -172,16 +172,15 @@ function mostrarForaLote(prod) {
 // -----------------------------------------------
 async function abrirModalContagens() {
   if (!loteAtual) return;
-  const db = await openDB("InventarioDB");
+  const db = await abrirDB();
   if (!db.objectStoreNames.contains("contagens")) { db.close(); return; }
 
   const tx = db.transaction(["contagens"], "readonly");
-  const req = tx.objectStore("contagens").getAll();
+  // Usa índice para buscar só as contagens do lote atual
+  const req = tx.objectStore("contagens").index("loteNome").getAll(loteAtual.nome);
   req.onsuccess = () => {
     db.close();
-    const todas = (req.result || []).filter((r) => r.loteNome === loteAtual.nome);
-    // Ordena mais recente primeiro
-    todas.sort((a, b) => new Date(b.dataHora) - new Date(a.dataHora));
+    const todas = (req.result || []).sort((a, b) => new Date(b.dataHora) - new Date(a.dataHora));
 
     const lista = document.getElementById("contagens-modal-lista");
     const badge = document.getElementById("total-contagens-badge");
@@ -214,6 +213,7 @@ async function abrirModalContagens() {
 // UI helpers: exibir produto
 // -----------------------------------------------
 function exibirProduto(prod) {
+  produtoSelecionado = prod; // armazena referência segura ao objeto
   document.getElementById("resultado").innerHTML = `
     <div class="cnt-produto-card">
       <div class="cnt-produto-seq">SEQ: ${prod.SEQPRODUTO}</div>
@@ -226,6 +226,7 @@ function exibirProduto(prod) {
 function exibirLista(lista) {
   const resultado = document.getElementById("resultado");
   resultado.innerHTML = "";
+  produtoSelecionado = null;
 
   if (!lista || lista.length === 0) {
     resultado.innerHTML = `<div class="cnt-error-msg">Nenhum produto encontrado</div>`;
@@ -244,7 +245,7 @@ function exibirLista(lista) {
 
     li.addEventListener("click", async () => {
       const chk = document.getElementById("qtde1");
-      exibirProduto(prod);
+      exibirProduto(prod); // também seta produtoSelecionado
       if (chk && chk.checked) {
         document.getElementById("quantidade").value = 1;
         await onConfirmarQuantidade();
@@ -277,7 +278,7 @@ function mostrarUltimoContado(r) {
 // Busca helpers
 // -----------------------------------------------
 function removerAcentos(txt) {
-  return txt.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+  return txt.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
 }
 
 function isProbablyCode(txt) {
@@ -297,21 +298,18 @@ function buscarPorNome(v) {
 }
 
 // -----------------------------------------------
-// Soma contagens existentes
+// Soma contagens existentes (usa índice)
 // -----------------------------------------------
 async function somaExistentes(prod) {
-  await ensureContagensStore();
-  const db = await openDB("InventarioDB");
+  const db = await abrirDB();
   if (!db.objectStoreNames.contains("contagens")) { db.close(); return 0; }
   return new Promise((resolve) => {
     const tx = db.transaction(["contagens"], "readonly");
-    const req = tx.objectStore("contagens").getAll();
+    const req = tx.objectStore("contagens").index("loteNome").getAll(loteAtual?.nome);
     req.onsuccess = () => {
       db.close();
       const soma = (req.result || []).reduce((acc, r) => {
-        if (r.loteNome === loteAtual?.nome && String(r.codacesso) === String(prod.CODACESSO)) {
-          acc += Number(r.quantidade) || 0;
-        }
+        if (String(r.codacesso) === String(prod.CODACESSO)) acc += Number(r.quantidade) || 0;
         return acc;
       }, 0);
       resolve(soma);
@@ -331,8 +329,7 @@ async function preencherSoma(prod) {
 // Salvar contagem
 // -----------------------------------------------
 async function salvarContagem(record) {
-  await ensureContagensStore();
-  const db = await openDB("InventarioDB");
+  const db = await abrirDB();
   const tx = db.transaction(["contagens"], "readwrite");
   tx.objectStore("contagens").add(record);
   return new Promise((resolve, reject) => {
@@ -353,12 +350,9 @@ function focusQuantidade() {
   const q = document.getElementById("quantidade");
   if (!q) return;
   if (window.matchMedia("(pointer: coarse)").matches) {
-    // Coletor: foca sem abrir teclado virtual (inputmode=none)
-    // O teclado físico continua funcionando normalmente
     q.setAttribute("inputmode", "none");
     q.focus();
     q.select();
-    // Se o usuário tocar manualmente no campo, abre o teclado virtual
     q.addEventListener("click", function () {
       q.setAttribute("inputmode", "decimal");
       q.blur();
@@ -390,16 +384,15 @@ async function onCodigoEnter(e) {
     const r = buscarPorCodigo(v);
 
     if (r.length === 0) {
-      // Verifica se é produto que existe mas está fora do lote
-      // O CSV global pode não estar disponível aqui, por isso usamos codigosNoLoteSet
       if (!codigosNoLoteSet.has(v)) {
-        // Produto fora do lote ou inexistente — tenta determinar
         mostrarForaLote({ DESCCOMPLETA: `Código ${v}` });
         tocarSom("erro");
         document.getElementById("resultado").innerHTML = "";
+        produtoSelecionado = null;
         return focusCodigo();
       }
       document.getElementById("resultado").innerHTML = `<div class="cnt-error-msg">Nenhum produto encontrado</div>`;
+      produtoSelecionado = null;
       tocarSom("erro");
       return focusCodigo();
     }
@@ -420,6 +413,7 @@ async function onCodigoEnter(e) {
 
     if (r.length === 0) {
       document.getElementById("resultado").innerHTML = `<div class="cnt-error-msg">Nenhum produto encontrado</div>`;
+      produtoSelecionado = null;
       tocarSom("erro");
       return focusCodigo();
     }
@@ -446,7 +440,8 @@ async function onConfirmarQuantidade() {
   const coluna   = document.getElementById("coluna")?.value.trim();
   const andar    = document.getElementById("andar")?.value.trim();
 
-  if (!corredor || !coluna || !andar || coluna === "" || andar === "") {
+  // Fix: removida verificação redundante (coluna === "" já coberta por !coluna)
+  if (!corredor || !coluna || !andar) {
     toast("Preencha Corredor, Coluna e Andar antes de salvar!");
     tocarSom("erro");
     return;
@@ -461,47 +456,37 @@ async function onConfirmarQuantidade() {
     return qtdEl.select();
   }
 
-  if (!resultado.innerText.trim()) {
+  // Fix: usa produtoSelecionado em vez de buscar pelo innerText do DOM
+  if (!produtoSelecionado) {
     toast("Nenhum produto selecionado.");
     tocarSom("erro");
     return focusCodigo();
   }
 
-  // Encontra o produto
-  let prod = produtosLote.find(
-    (p) => String(p.CODACESSO).trim() === codigoEl.value.trim()
-  );
-  if (!prod) {
-    const txt = resultado.innerText;
-    prod = produtosLote.find((p) => txt.includes(p.DESCCOMPLETA));
-  }
-  if (!prod) {
-    toast("Produto não encontrado!");
-    tocarSom("erro");
-    return focusCodigo();
-  }
+  const prod = produtoSelecionado;
 
   if (qtd === 0) {
     codigoEl.value = "";
     qtdEl.value = "";
     resultado.innerHTML = "";
+    produtoSelecionado = null;
     return focusCodigo();
   }
 
   const reg = {
-    loteNome:     loteAtual?.nome || null,
-    usuario:      loteAtual?.usuario || null,
-    loja:         loteAtual?.loja || null,
-    tipoContagem: document.querySelector("input[name='tipo-contagem']:checked")?.value || "",
-    corredor:     corredor,
-    coluna:       coluna,
-    andar:        andar,
-    seqproduto:   prod.SEQPRODUTO,
-    desccompleta: prod.DESCCOMPLETA,
-    codacesso:    prod.CODACESSO,
-    qtdeembalagem:prod.QTDEMBALAGEM,
-    quantidade:   qtd,
-    dataHora:     (() => {
+    loteNome:      loteAtual?.nome || null,
+    usuario:       loteAtual?.usuario || null,
+    loja:          loteAtual?.loja || null,
+    tipoContagem:  document.querySelector("input[name='tipo-contagem']:checked")?.value || "",
+    corredor,
+    coluna,
+    andar,
+    seqproduto:    prod.SEQPRODUTO,
+    desccompleta:  prod.DESCCOMPLETA,
+    codacesso:     prod.CODACESSO,
+    qtdeembalagem: prod.QTDEMBALAGEM,
+    quantidade:    qtd,
+    dataHora: (() => {
       const d = new Date();
       const pad = (n) => String(n).padStart(2, "0");
       return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
@@ -516,6 +501,7 @@ async function onConfirmarQuantidade() {
 
     codigoEl.value = "";
     resultado.innerHTML = "";
+    produtoSelecionado = null;
 
     const chk = document.getElementById("qtde1");
     qtdEl.value = (chk && chk.checked) ? "1" : "";
@@ -552,7 +538,6 @@ function setupCheckboxQtde1() {
 // Init
 // -----------------------------------------------
 document.addEventListener("DOMContentLoaded", async () => {
-  await ensureContagensStore();
   await carregarProdutosDoLote();
   setupCheckboxQtde1();
 
@@ -564,10 +549,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     if (e.key === "Enter") { e.preventDefault(); onConfirmarQuantidade(); }
   });
 
-  // Ver contagens
-  document.getElementById("ver-contagens-btn")?.addEventListener("click", () => {
-    abrirModalContagens();
-  });
+  document.getElementById("ver-contagens-btn")?.addEventListener("click", abrirModalContagens);
 
   document.getElementById("contagens-modal-close")?.addEventListener("click", () => {
     document.getElementById("contagens-modal").style.display = "none";
@@ -577,7 +559,6 @@ document.addEventListener("DOMContentLoaded", async () => {
     if (e.target === e.currentTarget) e.currentTarget.style.display = "none";
   });
 
-  // Desbloqueia AudioContext no primeiro toque (necessário em mobile)
   document.addEventListener("touchstart", () => {
     if (audioCtx && audioCtx.state === "suspended") audioCtx.resume();
   }, { once: true });

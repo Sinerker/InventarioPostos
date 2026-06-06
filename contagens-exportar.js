@@ -2,16 +2,33 @@
    contagens-exportar.js — exportação CSV + TXT
    ============================================= */
 
-async function openDBExport(name) {
+function abrirDBExport() {
   return new Promise((resolve, reject) => {
-    const req = indexedDB.open(name);
-    req.onsuccess = () => resolve(req.result);
+    const req = indexedDB.open("InventarioDB", 2);
+
+    req.onupgradeneeded = (e) => {
+      const db = e.target.result;
+      if (!db.objectStoreNames.contains("lotes")) {
+        db.createObjectStore("lotes", { keyPath: "nome" });
+      }
+      if (!db.objectStoreNames.contains("contagens")) {
+        const store = db.createObjectStore("contagens", { keyPath: "id", autoIncrement: true });
+        store.createIndex("loteNome", "loteNome", { unique: false });
+      } else if (e.oldVersion < 2) {
+        const store = e.target.transaction.objectStore("contagens");
+        if (!store.indexNames.contains("loteNome")) {
+          store.createIndex("loteNome", "loteNome", { unique: false });
+        }
+      }
+    };
+
+    req.onsuccess = (e) => resolve(e.target.result);
     req.onerror = (e) => reject(e.target.error);
   });
 }
 
 async function exportarContagens() {
-  const db = await openDBExport("InventarioDB");
+  const db = await abrirDBExport();
 
   if (!db.objectStoreNames.contains("contagens")) {
     alert("Nenhuma contagem encontrada para exportar.");
@@ -19,20 +36,17 @@ async function exportarContagens() {
     return;
   }
 
-  // Pega lote ativo
   const loteNome = sessionStorage.getItem("loteAtivo");
 
   const tx = db.transaction(["contagens"], "readonly");
-  const req = tx.objectStore("contagens").getAll();
+  // Usa índice se tiver lote ativo, senão pega tudo
+  const req = loteNome
+    ? tx.objectStore("contagens").index("loteNome").getAll(loteNome)
+    : tx.objectStore("contagens").getAll();
 
   req.onsuccess = () => {
-    let contagens = req.result || [];
+    const contagens = req.result || [];
     db.close();
-
-    // Filtra pelo lote ativo se houver
-    if (loteNome) {
-      contagens = contagens.filter((r) => r.loteNome === loteNome);
-    }
 
     if (contagens.length === 0) {
       alert("Nenhuma contagem registrada.");
@@ -43,7 +57,7 @@ async function exportarContagens() {
     const loja    = (contagens[0].loja    || "LOJA").toUpperCase();
     const data    = new Date().toISOString().split("T")[0];
 
-    /* ---- 1. CSV detalhado ---- */
+    /* ---- 1. CSV detalhado (com BOM UTF-8 para Excel) ---- */
     const cabecalho =
       "DATA;HORA;USUARIO;TIPO-CONTAGEM;CORREDOR;COLUNA;ANDAR;SEQPRODUTO;CODACESSO;DESCCOMPLETA;QTDEMBALAGEM;QUANTIDADE;";
 
@@ -70,7 +84,8 @@ async function exportarContagens() {
       ].join(";");
     });
 
-    const csv = [cabecalho, ...linhas].join("\n");
+    // Fix: ﻿ = BOM UTF-8 — garante que o Excel leia acentos corretamente
+    const csv = "﻿" + [cabecalho, ...linhas].join("\n");
     baixarArquivo(csv, `${usuario}_${loja}_${data}.csv`, "text/csv;charset=utf-8;");
 
     /* ---- 2. TXT concatenado ---- */

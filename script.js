@@ -120,14 +120,50 @@ function criarArvoreCategorias() {
   container.appendChild(gerarHTMLArvore(estrutura));
 }
 
-// Propaga check para filhos
+// Propaga check para filhos e atualiza estado indeterminado dos pais
 document.addEventListener("change", function (e) {
   if (!e.target.classList.contains("tree-checkbox")) return;
+
+  // 1. Propaga para todos os filhos
   const li = e.target.closest("li");
   if (!li) return;
   li.querySelectorAll("input[type='checkbox']").forEach((cb) => {
     cb.checked = e.target.checked;
+    cb.indeterminate = false;
   });
+
+  // 2. Atualiza estado dos ancestrais (indeterminate / checked / unchecked)
+  atualizarPais(e.target);
 });
+
+function atualizarPais(checkbox) {
+  // Sobe na árvore atualizando cada <li> pai
+  let liAtual = checkbox.closest("li");
+  while (liAtual) {
+    const liPai = liAtual.parentElement?.closest("li");
+    if (!liPai) break;
+
+    const cbPai = liPai.querySelector(":scope > .tree-node-header input[type='checkbox']");
+    if (!cbPai) { liAtual = liPai; continue; }
+
+    const todosFilhos = Array.from(
+      liPai.querySelectorAll(".tree-children input[type='checkbox']")
+    );
+    const marcados = todosFilhos.filter((c) => c.checked).length;
+
+    if (marcados === 0) {
+      cbPai.checked = false;
+      cbPai.indeterminate = false;
+    } else if (marcados === todosFilhos.length) {
+      cbPai.checked = true;
+      cbPai.indeterminate = false;
+    } else {
+      cbPai.checked = false;
+      cbPai.indeterminate = true;
+    }
+
+    liAtual = liPai;
+  }
+}
 
 document.addEventListener("DOMContentLoaded", carregarCSV);
