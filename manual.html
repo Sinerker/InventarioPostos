@@ -1,0 +1,850 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Manual do Usuário — Inventário Postos</title>
+  <style>
+    :root {
+      --clr-primary: #2563eb;
+      --clr-primary-light: #dbeafe;
+      --clr-bg: #f8fafc;
+      --clr-surface: #ffffff;
+      --clr-border: #e2e8f0;
+      --clr-text: #0f172a;
+      --clr-text-secondary: #64748b;
+      --clr-success: #16a34a;
+      --clr-success-light: #dcfce7;
+      --clr-warn: #d97706;
+      --clr-warn-light: #fef3c7;
+      --clr-danger: #dc2626;
+      --clr-danger-light: #fee2e2;
+      --radius: 10px;
+      --shadow: 0 1px 4px rgba(0,0,0,.08);
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: var(--clr-bg);
+      color: var(--clr-text);
+      line-height: 1.6;
+      font-size: 15px;
+    }
+
+    /* ── Sidebar ── */
+    .layout { display: flex; min-height: 100vh; }
+
+    .sidebar {
+      width: 260px;
+      flex-shrink: 0;
+      background: var(--clr-surface);
+      border-right: 1px solid var(--clr-border);
+      padding: 1.5rem 1rem;
+      position: sticky;
+      top: 0;
+      height: 100vh;
+      overflow-y: auto;
+    }
+
+    .sidebar-logo {
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+      font-weight: 800;
+      font-size: 1.05rem;
+      color: var(--clr-primary);
+      margin-bottom: 1.5rem;
+      padding-bottom: 1rem;
+      border-bottom: 1px solid var(--clr-border);
+    }
+
+    .sidebar-logo svg { flex-shrink: 0; }
+
+    .nav-section {
+      font-size: 0.7rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: .08em;
+      color: var(--clr-text-secondary);
+      margin: 1.2rem 0 0.4rem 0.25rem;
+    }
+
+    .nav-link {
+      display: block;
+      padding: 0.45rem 0.75rem;
+      border-radius: 7px;
+      font-size: 0.875rem;
+      color: var(--clr-text-secondary);
+      text-decoration: none;
+      transition: background .15s, color .15s;
+      margin-bottom: 1px;
+    }
+
+    .nav-link:hover, .nav-link.active {
+      background: var(--clr-primary-light);
+      color: var(--clr-primary);
+      font-weight: 600;
+    }
+
+    /* ── Conteúdo ── */
+    .content {
+      flex: 1;
+      padding: 2.5rem 2rem;
+      max-width: 860px;
+    }
+
+    .page-header {
+      margin-bottom: 2.5rem;
+    }
+
+    .page-header h1 {
+      font-size: 1.9rem;
+      font-weight: 800;
+      color: var(--clr-text);
+      margin-bottom: 0.4rem;
+    }
+
+    .page-header p {
+      color: var(--clr-text-secondary);
+      font-size: 1rem;
+    }
+
+    /* ── Seções ── */
+    section { margin-bottom: 3rem; scroll-margin-top: 1.5rem; }
+
+    h2 {
+      font-size: 1.3rem;
+      font-weight: 700;
+      color: var(--clr-text);
+      margin-bottom: 1rem;
+      padding-bottom: 0.5rem;
+      border-bottom: 2px solid var(--clr-primary-light);
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    h3 {
+      font-size: 1rem;
+      font-weight: 700;
+      color: var(--clr-text);
+      margin: 1.25rem 0 0.5rem;
+    }
+
+    p { margin-bottom: 0.75rem; color: var(--clr-text); }
+
+    /* ── Cards ── */
+    .card {
+      background: var(--clr-surface);
+      border: 1px solid var(--clr-border);
+      border-radius: var(--radius);
+      padding: 1.25rem 1.5rem;
+      margin-bottom: 1rem;
+      box-shadow: var(--shadow);
+    }
+
+    .card-title {
+      font-weight: 700;
+      font-size: 0.95rem;
+      margin-bottom: 0.4rem;
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+    }
+
+    /* ── Alertas ── */
+    .alert {
+      padding: 0.85rem 1.1rem;
+      border-radius: var(--radius);
+      font-size: 0.9rem;
+      margin-bottom: 1rem;
+      display: flex;
+      gap: 0.6rem;
+      align-items: flex-start;
+    }
+
+    .alert-info  { background: var(--clr-primary-light); color: #1e40af; border-left: 3px solid var(--clr-primary); }
+    .alert-ok    { background: var(--clr-success-light);  color: #15803d; border-left: 3px solid var(--clr-success); }
+    .alert-warn  { background: var(--clr-warn-light);     color: #92400e; border-left: 3px solid var(--clr-warn); }
+    .alert-danger{ background: var(--clr-danger-light);   color: #991b1b; border-left: 3px solid var(--clr-danger); }
+
+    /* ── Passos numerados ── */
+    .steps { counter-reset: step; list-style: none; padding: 0; }
+
+    .steps li {
+      counter-increment: step;
+      padding: 0.75rem 1rem 0.75rem 3rem;
+      position: relative;
+      border-left: 2px solid var(--clr-border);
+      margin-left: 1rem;
+      margin-bottom: 0.5rem;
+    }
+
+    .steps li::before {
+      content: counter(step);
+      position: absolute;
+      left: -1.1rem;
+      top: 0.7rem;
+      width: 2rem;
+      height: 2rem;
+      background: var(--clr-primary);
+      color: #fff;
+      font-weight: 700;
+      font-size: 0.8rem;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .steps li:last-child { border-left-color: transparent; }
+
+    /* ── Tabela de campos ── */
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.875rem;
+      margin-bottom: 1rem;
+    }
+
+    thead th {
+      background: var(--clr-primary-light);
+      color: var(--clr-primary);
+      font-weight: 700;
+      text-align: left;
+      padding: 0.6rem 0.8rem;
+    }
+
+    tbody td {
+      padding: 0.55rem 0.8rem;
+      border-bottom: 1px solid var(--clr-border);
+      vertical-align: top;
+    }
+
+    tbody tr:last-child td { border-bottom: none; }
+    tbody tr:hover td { background: var(--clr-bg); }
+
+    /* ── Badge tecla ── */
+    kbd {
+      display: inline-block;
+      padding: 0.15rem 0.5rem;
+      background: #f1f5f9;
+      border: 1px solid #cbd5e1;
+      border-radius: 5px;
+      font-family: monospace;
+      font-size: 0.8rem;
+      font-weight: 700;
+      color: var(--clr-text);
+    }
+
+    /* ── Fluxo visual ── */
+    .flow {
+      display: flex;
+      flex-direction: column;
+      gap: 0;
+    }
+
+    .flow-step {
+      display: flex;
+      gap: 1rem;
+      align-items: flex-start;
+    }
+
+    .flow-line {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      flex-shrink: 0;
+    }
+
+    .flow-dot {
+      width: 2.2rem;
+      height: 2.2rem;
+      border-radius: 50%;
+      background: var(--clr-primary);
+      color: #fff;
+      font-weight: 700;
+      font-size: 0.85rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+
+    .flow-connector {
+      width: 2px;
+      flex: 1;
+      min-height: 24px;
+      background: var(--clr-border);
+      margin: 3px 0;
+    }
+
+    .flow-body {
+      padding-bottom: 1.5rem;
+      padding-top: 0.35rem;
+      flex: 1;
+    }
+
+    .flow-body strong { display: block; margin-bottom: 0.2rem; font-size: 0.95rem; }
+    .flow-body span { font-size: 0.85rem; color: var(--clr-text-secondary); }
+
+    /* ── Formato de arquivo ── */
+    .file-format {
+      background: #0f172a;
+      color: #e2e8f0;
+      border-radius: var(--radius);
+      padding: 1rem 1.25rem;
+      font-family: monospace;
+      font-size: 0.82rem;
+      line-height: 1.7;
+      margin-bottom: 1rem;
+      overflow-x: auto;
+    }
+
+    .file-format .comment { color: #94a3b8; }
+    .file-format .highlight { color: #7dd3fc; }
+
+    /* ── Grid de dicas ── */
+    .tip-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 0.75rem;
+      margin-bottom: 1rem;
+    }
+
+    .tip {
+      background: var(--clr-surface);
+      border: 1px solid var(--clr-border);
+      border-radius: var(--radius);
+      padding: 0.9rem 1rem;
+      font-size: 0.875rem;
+    }
+
+    .tip strong { display: block; margin-bottom: 0.2rem; color: var(--clr-primary); }
+
+    /* ── Responsivo ── */
+    @media (max-width: 768px) {
+      .sidebar { display: none; }
+      .content { padding: 1.25rem 1rem; }
+      .tip-grid { grid-template-columns: 1fr; }
+      h2 { font-size: 1.15rem; }
+    }
+  </style>
+</head>
+<body>
+
+<div class="layout">
+
+  <!-- Sidebar de navegação -->
+  <nav class="sidebar">
+    <div class="sidebar-logo">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2"/>
+        <rect x="9" y="3" width="6" height="4" rx="1"/>
+        <path d="m9 12 2 2 4-4"/>
+      </svg>
+      Manual do Usuário
+    </div>
+
+    <span class="nav-section">Introdução</span>
+    <a class="nav-link" href="#visao-geral">Visão Geral</a>
+    <a class="nav-link" href="#requisitos">Requisitos</a>
+
+    <span class="nav-section">Passo a Passo</span>
+    <a class="nav-link" href="#fluxo">Fluxo Completo</a>
+    <a class="nav-link" href="#tela-inicio">1. Tela Inicial</a>
+    <a class="nav-link" href="#criar-lote">2. Criar um Lote</a>
+    <a class="nav-link" href="#tela-contagens">3. Tela de Contagens</a>
+    <a class="nav-link" href="#contar">4. Registrar Contagens</a>
+    <a class="nav-link" href="#ver-contagens">5. Ver Contagens</a>
+    <a class="nav-link" href="#exportar">6. Exportar</a>
+
+    <span class="nav-section">Referência</span>
+    <a class="nav-link" href="#campos">Campos explicados</a>
+    <a class="nav-link" href="#arquivos">Arquivos exportados</a>
+    <a class="nav-link" href="#dicas">Dicas e Atalhos</a>
+    <a class="nav-link" href="#problemas">Problemas comuns</a>
+  </nav>
+
+  <!-- Conteúdo principal -->
+  <main class="content">
+
+    <div class="page-header">
+      <h1>Manual do Usuário</h1>
+      <p>Sistema de Inventário Postos — guia completo para realizar contagens.</p>
+    </div>
+
+    <!-- ── Visão Geral ── -->
+    <section id="visao-geral">
+      <h2>
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg>
+        Visão Geral
+      </h2>
+      <p>O sistema de Inventário Postos permite realizar contagens de produtos de forma rápida e organizada, salvando os dados diretamente no navegador e gerando arquivos para integração com o sistema de back-office.</p>
+
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; margin-top: 1rem;">
+        <div class="card">
+          <div class="card-title">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#2563eb" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg>
+            index.html — Tela Inicial
+          </div>
+          <p style="font-size:.875rem;color:var(--clr-text-secondary);margin:0">Criação e gerenciamento de lotes. Ponto de entrada do sistema.</p>
+        </div>
+        <div class="card">
+          <div class="card-title">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#2563eb" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2"/><rect x="9" y="3" width="6" height="4" rx="1"/><path d="m9 12 2 2 4-4"/></svg>
+            contagens.html — Contagens
+          </div>
+          <p style="font-size:.875rem;color:var(--clr-text-secondary);margin:0">Tela de trabalho: busca produtos, registra quantidades e exporta.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- ── Requisitos ── -->
+    <section id="requisitos">
+      <h2>
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+        Requisitos
+      </h2>
+
+      <div class="alert alert-warn">
+        <span>⚠️</span>
+        <div><strong>Arquivo CSV obrigatório:</strong> O sistema depende do arquivo <strong>embalagens com categorias.csv</strong> para funcionar. Sem ele, não é possível criar lotes nem contar produtos.</div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">O que é necessário</div>
+        <ul style="padding-left:1.25rem;font-size:.9rem;color:var(--clr-text-secondary);">
+          <li>Navegador moderno (Chrome, Edge, Firefox, Safari)</li>
+          <li>Arquivo <strong>embalagens com categorias.csv</strong> disponível no dispositivo</li>
+          <li>Não é necessário internet após o primeiro carregamento</li>
+          <li>Os dados ficam salvos no próprio navegador (IndexedDB)</li>
+        </ul>
+      </div>
+
+      <div class="alert alert-info">
+        <span>ℹ️</span>
+        <div>Os dados são salvos <strong>somente neste navegador</strong>, neste dispositivo. Limpar os dados do navegador apaga todas as contagens.</div>
+      </div>
+    </section>
+
+    <!-- ── Fluxo Completo ── -->
+    <section id="fluxo">
+      <h2>
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+        Fluxo Completo
+      </h2>
+      <p>O processo de contagem segue estas etapas em ordem:</p>
+
+      <div class="flow">
+        <div class="flow-step">
+          <div class="flow-line"><div class="flow-dot">1</div><div class="flow-connector"></div></div>
+          <div class="flow-body"><strong>Carregar o CSV na Tela Inicial</strong><span>Faça upload do arquivo de produtos para habilitar as categorias.</span></div>
+        </div>
+        <div class="flow-step">
+          <div class="flow-line"><div class="flow-dot">2</div><div class="flow-connector"></div></div>
+          <div class="flow-body"><strong>Preencher usuário, loja e descrição</strong><span>Identifica quem está fazendo a contagem e em qual loja.</span></div>
+        </div>
+        <div class="flow-step">
+          <div class="flow-line"><div class="flow-dot">3</div><div class="flow-connector"></div></div>
+          <div class="flow-body"><strong>Selecionar as categorias desejadas</strong><span>Escolha quais grupos de produtos farão parte deste lote.</span></div>
+        </div>
+        <div class="flow-step">
+          <div class="flow-line"><div class="flow-dot">4</div><div class="flow-connector"></div></div>
+          <div class="flow-body"><strong>Clicar em "Criar Lote"</strong><span>O sistema filtra os produtos e abre a tela de contagens.</span></div>
+        </div>
+        <div class="flow-step">
+          <div class="flow-line"><div class="flow-dot">5</div><div class="flow-connector"></div></div>
+          <div class="flow-body"><strong>Preencher localização (Corredor, Coluna, Andar)</strong><span>Informe onde você está contando antes de começar.</span></div>
+        </div>
+        <div class="flow-step">
+          <div class="flow-line"><div class="flow-dot">6</div><div class="flow-connector"></div></div>
+          <div class="flow-body"><strong>Contar produtos (repetir para cada item)</strong><span>Escanear/digitar código → Enter → digitar quantidade → Enter.</span></div>
+        </div>
+        <div class="flow-step">
+          <div class="flow-line"><div class="flow-dot">7</div><div class="flow-connector"></div></div>
+          <div class="flow-body"><strong>Exportar as contagens</strong><span>Gera CSV e TXT para envio ao sistema de back-office.</span></div>
+        </div>
+        <div class="flow-step">
+          <div class="flow-line"><div class="flow-dot" style="background:var(--clr-success)">✓</div></div>
+          <div class="flow-body"><strong>Pronto!</strong><span>Volte para criar um novo lote ou continue o existente.</span></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ── Tela Inicial ── -->
+    <section id="tela-inicio">
+      <h2>
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg>
+        1. Tela Inicial (index.html)
+      </h2>
+
+      <p>Esta é a primeira tela que você vê. Aqui você carrega o arquivo de produtos e gerencia os lotes existentes.</p>
+
+      <h3>Carregar o arquivo CSV</h3>
+      <div class="alert alert-info">
+        <span>ℹ️</span>
+        <div>O arquivo CSV é carregado <strong>automaticamente</strong> se já estiver disponível. Caso contrário, aparecerá um botão para selecioná-lo. Após o carregamento, a árvore de categorias fica visível.</div>
+      </div>
+
+      <h3>Lotes existentes</h3>
+      <p>Os lotes já criados aparecem em forma de cards. Cada card mostra:</p>
+      <ul style="padding-left:1.25rem;font-size:.9rem;margin-bottom:.75rem;">
+        <li><strong>Nome do lote</strong> (usuário + loja + descrição)</li>
+        <li><strong>Dentro do lote:</strong> quantidade de produtos selecionados</li>
+        <li><strong>Fora do lote:</strong> produtos contados que não estavam na seleção</li>
+        <li><strong>Total contado:</strong> número de registros de contagem salvos</li>
+      </ul>
+
+      <div class="card">
+        <div class="card-title">Ações nos cards de lotes</div>
+        <table>
+          <tbody>
+            <tr><td style="width:140px"><strong>Clicar no card</strong></td><td>Continua as contagens deste lote (vai para contagens.html)</td></tr>
+            <tr><td><strong>Ícone de olho</strong></td><td>Abre modal mostrando produtos dentro e fora do lote</td></tr>
+            <tr><td><strong>Ícone de lixeira</strong></td><td>Exclui o lote e todas as suas contagens (pede confirmação)</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- ── Criar Lote ── -->
+    <section id="criar-lote">
+      <h2>
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>
+        2. Criar um Lote
+      </h2>
+
+      <p>Preencha os campos e selecione as categorias antes de criar o lote.</p>
+
+      <h3>Campos do formulário</h3>
+      <table>
+        <thead>
+          <tr><th>Campo</th><th>Obrigatório</th><th>O que preencher</th></tr>
+        </thead>
+        <tbody>
+          <tr><td><strong>Usuário</strong></td><td>Sim</td><td>Selecione seu nome na lista</td></tr>
+          <tr><td><strong>Loja</strong></td><td>Sim</td><td>Selecione a loja/filial que está sendo contada</td></tr>
+          <tr><td><strong>Descrição</strong></td><td>Não</td><td>Texto livre para identificar o lote (ex: "Bebidas Corredor A"). Permite ter múltiplos lotes para a mesma loja.</td></tr>
+        </tbody>
+      </table>
+
+      <h3>Selecionar categorias</h3>
+      <p>A árvore de categorias é criada a partir do CSV. Clique nos grupos para expandir e marque as categorias desejadas.</p>
+
+      <div class="tip-grid">
+        <div class="tip">
+          <strong>Marcar categoria pai</strong>
+          Seleciona automaticamente todas as subcategorias abaixo.
+        </div>
+        <div class="tip">
+          <strong>Marcação parcial</strong>
+          Se apenas alguns filhos estão marcados, o pai fica com estado intermediário.
+        </div>
+      </div>
+
+      <div class="alert alert-ok">
+        <span>✅</span>
+        <div>Após clicar em <strong>"Criar Lote"</strong>, o sistema filtra os produtos das categorias selecionadas e redireciona automaticamente para a tela de contagens.</div>
+      </div>
+    </section>
+
+    <!-- ── Tela de Contagens ── -->
+    <section id="tela-contagens">
+      <h2>
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2"/><rect x="9" y="3" width="6" height="4" rx="1"/></svg>
+        3. Tela de Contagens (contagens.html)
+      </h2>
+
+      <p>Esta é a tela principal de trabalho. O nome do lote ativo aparece no cabeçalho.</p>
+
+      <h3>Botões do cabeçalho</h3>
+      <table>
+        <tbody>
+          <tr><td style="width:160px"><strong>← (seta)</strong></td><td>Volta para a tela inicial</td></tr>
+          <tr><td><strong>Ícone de prancheta</strong></td><td>Abre a lista de contagens registradas (com busca)</td></tr>
+          <tr><td><strong>Ícone de tela cheia</strong></td><td>Ativa/desativa o modo tela cheia</td></tr>
+        </tbody>
+      </table>
+
+      <h3>Localização</h3>
+      <p>Antes de começar a contar, preencha onde você está:</p>
+      <table>
+        <thead><tr><th>Campo</th><th>O que significa</th><th>Exemplo</th></tr></thead>
+        <tbody>
+          <tr><td><strong>Tipo</strong></td><td>Se é contagem de loja ou depósito</td><td>Loja / Depósito</td></tr>
+          <tr><td><strong>Corredor</strong></td><td>Identificação do corredor</td><td>A, B, C...</td></tr>
+          <tr><td><strong>Coluna</strong></td><td>Coluna da prateleira</td><td>A até Z</td></tr>
+          <tr><td><strong>Andar</strong></td><td>Nível da prateleira</td><td>1 até 20</td></tr>
+        </tbody>
+      </table>
+
+      <div class="alert alert-info">
+        <span>ℹ️</span>
+        <div>O sistema <strong>lembra</strong> os valores de localização entre sessões. Você não precisa preencher novamente se continuar no mesmo lugar.</div>
+      </div>
+
+      <h3>Toggle "Qtde 1"</h3>
+      <p>Quando ativado, a quantidade é preenchida automaticamente como <strong>1</strong>, sem precisar digitar. Útil para contar itens unitários rapidamente.</p>
+    </section>
+
+    <!-- ── Registrar Contagens ── -->
+    <section id="contar">
+      <h2>
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 12 2 2 4-4"/><path d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2"/><rect x="9" y="3" width="6" height="4" rx="1"/></svg>
+        4. Registrar Contagens
+      </h2>
+
+      <p>O processo se repete para cada produto contado:</p>
+
+      <ol class="steps">
+        <li>
+          <strong>Digite ou escaneie o código/nome do produto</strong><br>
+          <span style="font-size:.875rem;color:var(--clr-text-secondary)">Você pode digitar o código de barras numérico ou palavras do nome do produto.</span>
+        </li>
+        <li>
+          <strong>Pressione <kbd>Enter</kbd></strong><br>
+          <span style="font-size:.875rem;color:var(--clr-text-secondary)">O sistema busca o produto e exibe nome, código e embalagem.</span>
+        </li>
+        <li>
+          <strong>Verifique o produto encontrado e digite a quantidade</strong><br>
+          <span style="font-size:.875rem;color:var(--clr-text-secondary)">Aceita números decimais (ex: 2.5). Use 0 para descartar sem salvar.</span>
+        </li>
+        <li>
+          <strong>Pressione <kbd>Enter</kbd> novamente</strong><br>
+          <span style="font-size:.875rem;color:var(--clr-text-secondary)">Um som de confirmação indica que a contagem foi salva. Os campos limpam automaticamente.</span>
+        </li>
+      </ol>
+
+      <h3>Busca por nome</h3>
+      <p>Se você digitar palavras em vez de código numérico, o sistema retorna uma lista de produtos correspondentes. Basta clicar no produto desejado.</p>
+
+      <div class="alert alert-warn">
+        <span>⚠️</span>
+        <div><strong>Produto fora do lote:</strong> Se o código encontrado no CSV não pertence às categorias do lote, aparece um aviso "Fora do Lote". A contagem ainda pode ser registrada, mas ficará marcada como fora.</div>
+      </div>
+
+      <div class="alert alert-danger">
+        <span>🔴</span>
+        <div><strong>Produto não encontrado:</strong> Se o código não existir no CSV, um som de erro toca e a busca não retorna resultado. Verifique se o código está correto.</div>
+      </div>
+    </section>
+
+    <!-- ── Ver Contagens ── -->
+    <section id="ver-contagens">
+      <h2>
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+        5. Ver Contagens Registradas
+      </h2>
+
+      <p>Clique no <strong>ícone de prancheta</strong> no cabeçalho para abrir o modal com todas as contagens do lote ativo.</p>
+
+      <div class="card">
+        <div class="card-title">Informações exibidas por contagem</div>
+        <ul style="padding-left:1.25rem;font-size:.9rem;color:var(--clr-text-secondary);">
+          <li>Descrição completa do produto</li>
+          <li>Código de acesso (CODACESSO)</li>
+          <li>Quantidade por embalagem</li>
+          <li>Localização: Corredor-Coluna-Andar</li>
+          <li>Horário em que foi contado</li>
+          <li>Quantidade contada</li>
+        </ul>
+      </div>
+
+      <h3>Campo de busca no modal</h3>
+      <p>Digite parte do nome ou código do produto para filtrar a lista em tempo real. Por exemplo, digitar <strong>"skol"</strong> mostra todas as contagens de produtos com "skol" na descrição.</p>
+      <p>O contador no cabeçalho do modal atualiza para mostrar quantos resultados foram encontrados.</p>
+    </section>
+
+    <!-- ── Exportar ── -->
+    <section id="exportar">
+      <h2>
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+        6. Exportar Contagens
+      </h2>
+
+      <p>Ao clicar em <strong>"Exportar Contagens"</strong>, dois arquivos são baixados automaticamente:</p>
+
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:.75rem;margin-bottom:1rem;">
+        <div class="card">
+          <div class="card-title" style="color:var(--clr-success)">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+            Arquivo CSV
+          </div>
+          <p style="font-size:.85rem;color:var(--clr-text-secondary);margin:0">Relatório detalhado. Pode ser aberto no Excel para análise.</p>
+        </div>
+        <div class="card">
+          <div class="card-title" style="color:var(--clr-primary)">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+            Arquivo TXT
+          </div>
+          <p style="font-size:.85rem;color:var(--clr-text-secondary);margin:0">Arquivo concatenado para integração com o sistema de back-office.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- ── Campos Explicados ── -->
+    <section id="campos">
+      <h2>
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
+        Campos Explicados
+      </h2>
+
+      <table>
+        <thead>
+          <tr><th>Campo</th><th>Tela</th><th>Descrição</th></tr>
+        </thead>
+        <tbody>
+          <tr><td><strong>Usuário</strong></td><td>Inicial</td><td>Identifica quem está realizando a contagem</td></tr>
+          <tr><td><strong>Loja</strong></td><td>Inicial</td><td>Filial/loja sendo contada</td></tr>
+          <tr><td><strong>Descrição do Lote</strong></td><td>Inicial</td><td>Texto opcional para diferenciar lotes da mesma loja (ex: "Bebidas", "Higiene")</td></tr>
+          <tr><td><strong>Categorias</strong></td><td>Inicial</td><td>Hierarquia de tipos de produto. Define quais produtos pertencem ao lote.</td></tr>
+          <tr><td><strong>Tipo de Contagem</strong></td><td>Contagens</td><td>"Loja" para produtos em exposição, "Depósito" para estoque no fundo</td></tr>
+          <tr><td><strong>Corredor</strong></td><td>Contagens</td><td>Letra ou código do corredor onde os produtos estão localizados</td></tr>
+          <tr><td><strong>Coluna</strong></td><td>Contagens</td><td>Coluna de A a Z dentro do corredor</td></tr>
+          <tr><td><strong>Andar</strong></td><td>Contagens</td><td>Nível da prateleira, de 1 (mais baixo) a 20 (mais alto)</td></tr>
+          <tr><td><strong>Código ou Nome</strong></td><td>Contagens</td><td>Campo de busca. Aceita código de barras (números) ou palavras do nome</td></tr>
+          <tr><td><strong>Quantidade</strong></td><td>Contagens</td><td>Número de unidades contadas. Aceita decimais. Zero descarta o registro.</td></tr>
+          <tr><td><strong>Qtde 1</strong></td><td>Contagens</td><td>Atalho: quando ativo, quantidade sempre 1 (sem precisar digitar)</td></tr>
+        </tbody>
+      </table>
+    </section>
+
+    <!-- ── Arquivos Exportados ── -->
+    <section id="arquivos">
+      <h2>
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
+        Arquivos Exportados
+      </h2>
+
+      <h3>CSV Detalhado</h3>
+      <p>Nome do arquivo: <code style="background:#f1f5f9;padding:.1rem .4rem;border-radius:4px">USUARIO_LOJA_DATA.csv</code></p>
+      <p>Contém uma linha por contagem registrada, com todas as informações:</p>
+      <div class="file-format">
+        <span class="comment">DATA;HORA;USUARIO;TIPO-CONTAGEM;CORREDOR;COLUNA;ANDAR;SEQPRODUTO;CODACESSO;DESCCOMPLETA;QTDEMBALAGEM;QUANTIDADE</span><br>
+        <span class="highlight">2025-01-15;10:35;ALEX;LOJA;A;C;3;12345;7891234567890;CERVEJA BRAHMA 350ML;1;5</span><br>
+        <span class="highlight">2025-01-15;10:36;ALEX;LOJA;A;C;3;12346;7891234567891;REFRIGERANTE COCA 2L;1;10</span>
+      </div>
+      <div class="alert alert-info">
+        <span>ℹ️</span>
+        <div>O arquivo inclui codificação UTF-8 para que o Excel exiba os acentos corretamente. Use <strong>ponto e vírgula</strong> como delimitador ao importar.</div>
+      </div>
+
+      <h3>TXT Concatenado</h3>
+      <p>Nome do arquivo: <code style="background:#f1f5f9;padding:.1rem .4rem;border-radius:4px">USUARIO_LOJA_DATA_CONCATENADO.txt</code></p>
+      <p>Formato fixo para integração com o sistema de back-office. Agrupa e soma contagens do mesmo produto.</p>
+      <div class="file-format">
+        <span class="comment">Cada linha tem 27 caracteres: 6 zeros + 14 dígitos de código + 7 dígitos de quantidade</span><br><br>
+        <span class="highlight">0000007891234567890000005</span>  <span class="comment">← COD 7891234567890, Qtd 5</span><br>
+        <span class="highlight">0000007891234567891000010</span>  <span class="comment">← COD 7891234567891, Qtd 10</span>
+      </div>
+    </section>
+
+    <!-- ── Dicas ── -->
+    <section id="dicas">
+      <h2>
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg>
+        Dicas e Atalhos
+      </h2>
+
+      <div class="tip-grid">
+        <div class="tip">
+          <strong>Use o leitor de código de barras</strong>
+          Conecte um leitor USB ou Bluetooth. Ele funciona como teclado e pressiona Enter automaticamente.
+        </div>
+        <div class="tip">
+          <strong>Ative "Qtde 1" para itens unitários</strong>
+          Economize tempo: o Enter no código já salva com quantidade 1.
+        </div>
+        <div class="tip">
+          <strong>Localização é salva automaticamente</strong>
+          Não precisa preencher corredor/coluna/andar a cada vez. Mude só quando trocar de local.
+        </div>
+        <div class="tip">
+          <strong>Busca por palavras</strong>
+          Digite parte do nome para encontrar produtos sem código. Ex: "brahma lata" encontra todos que têm essas palavras.
+        </div>
+        <div class="tip">
+          <strong>Use tela cheia (F11 ou botão)</strong>
+          Evita toques acidentais fora do app em tablets e terminais.
+        </div>
+        <div class="tip">
+          <strong>Um produto pode ser contado várias vezes</strong>
+          Em locais diferentes ou correções de quantidade. O TXT somará tudo.
+        </div>
+        <div class="tip">
+          <strong>Múltiplos lotes na mesma loja</strong>
+          Use a Descrição para separar: "Bebidas", "Higiene", "Padaria".
+        </div>
+        <div class="tip">
+          <strong>Som de feedback</strong>
+          Tom alto = sucesso. Tom baixo = erro. Use fones se o ambiente for barulhento.
+        </div>
+      </div>
+    </section>
+
+    <!-- ── Problemas Comuns ── -->
+    <section id="problemas">
+      <h2>
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+        Problemas Comuns
+      </h2>
+
+      <div class="card">
+        <div class="card-title">Árvore de categorias não aparece</div>
+        <p style="font-size:.9rem;margin:0;color:var(--clr-text-secondary)">O CSV ainda não foi carregado. Clique no botão de carregar arquivo e selecione o arquivo <strong>embalagens com categorias.csv</strong>.</p>
+      </div>
+
+      <div class="card">
+        <div class="card-title">Produto não encontrado ao buscar</div>
+        <p style="font-size:.9rem;margin:0;color:var(--clr-text-secondary)">O código ou nome não existe no CSV carregado. Verifique se o arquivo CSV é o correto e se o código está certo.</p>
+      </div>
+
+      <div class="card">
+        <div class="card-title">Aviso "Produto fora do lote"</div>
+        <p style="font-size:.9rem;margin:0;color:var(--clr-text-secondary)">O produto existe no CSV mas não pertence às categorias selecionadas no lote. Você ainda pode contá-lo — ele será registrado como "fora do lote" e incluído na exportação normalmente.</p>
+      </div>
+
+      <div class="card">
+        <div class="card-title">Dados sumiram após limpar o navegador</div>
+        <p style="font-size:.9rem;margin:0;color:var(--clr-text-secondary)">Os dados são salvos no navegador. Limpar "cookies e dados de sites" apaga as contagens. <strong>Exporte sempre antes de limpar o navegador.</strong></p>
+      </div>
+
+      <div class="card">
+        <div class="card-title">Botão "Exportar" não aparece</div>
+        <p style="font-size:.9rem;margin:0;color:var(--clr-text-secondary)">Verifique se existe um lote ativo (nome aparece no cabeçalho). Se o lote não tiver contagens registradas, o botão pode não gerar arquivo.</p>
+      </div>
+
+      <div class="card">
+        <div class="card-title">CSV abre com caracteres estranhos no Excel</div>
+        <p style="font-size:.9rem;margin:0;color:var(--clr-text-secondary)">Ao abrir o CSV, selecione codificação <strong>UTF-8</strong> e delimitador <strong>ponto e vírgula (;)</strong> no assistente do Excel.</p>
+      </div>
+    </section>
+
+    <div style="border-top:1px solid var(--clr-border);padding-top:1.5rem;color:var(--clr-text-secondary);font-size:.8rem;text-align:center;margin-top:1rem;">
+      Sistema de Inventário Postos — Manual do Usuário
+    </div>
+
+  </main>
+</div>
+
+<script>
+  // Destaca o link da seção visível no sidebar
+  const links = document.querySelectorAll(".nav-link");
+  const observer = new IntersectionObserver((entries) => {
+    entries.forEach((e) => {
+      if (e.isIntersecting) {
+        links.forEach((l) => l.classList.remove("active"));
+        const active = document.querySelector(`.nav-link[href="#${e.target.id}"]`);
+        if (active) active.classList.add("active");
+      }
+    });
+  }, { rootMargin: "-30% 0px -60% 0px" });
+
+  document.querySelectorAll("section[id]").forEach((s) => observer.observe(s));
+</script>
+
+</body>
+</html>
