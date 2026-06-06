@@ -716,34 +716,6 @@ a {
   flex: 1;
 }
 
-/* Busca no modal */
-.modal-search {
-  padding: 0.6rem 1.25rem;
-  border-bottom: 1px solid var(--clr-border);
-  flex-shrink: 0;
-}
-
-.modal-search input {
-  width: 100%;
-  padding: 0.45rem 0.75rem;
-  border: 1px solid var(--clr-border);
-  border-radius: var(--radius-sm);
-  background: var(--clr-bg);
-  color: var(--clr-text);
-  font-size: 0.875rem;
-  box-sizing: border-box;
-}
-
-.modal-search input:focus {
-  outline: 3px solid var(--clr-primary);
-  outline-offset: 1px;
-}
-
-.modal-search input::placeholder {
-  color: var(--clr-text-secondary);
-  opacity: 0.7;
-}
-
 /* Tabs */
 .modal-tabs {
   display: flex;

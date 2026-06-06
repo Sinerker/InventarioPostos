@@ -267,20 +267,6 @@ async function abrirModalProdutos(loteNome, abaInicial = "dentro") {
 }
 
 // -----------------------------------------------
-// Filtro de busca no modal de produtos
-// -----------------------------------------------
-function filtrarProdutosModal(termo) {
-  const q = termo.trim().toLowerCase();
-  ["lista-dentro", "lista-fora"].forEach((listaId) => {
-    const lista = document.getElementById(listaId);
-    lista.querySelectorAll(".produto-item").forEach((item) => {
-      const texto = item.textContent.toLowerCase();
-      item.style.display = q === "" || texto.includes(q) ? "" : "none";
-    });
-  });
-}
-
-// -----------------------------------------------
 // Modal de confirmação
 // -----------------------------------------------
 function exibirConfirmacao(titulo, mensagem) {
@@ -320,20 +306,10 @@ document.addEventListener("DOMContentLoaded", () => {
 
   document.getElementById("produtos-modal-close").addEventListener("click", () => {
     document.getElementById("produtos-modal").style.display = "none";
-    document.getElementById("modal-busca").value = "";
-    filtrarProdutosModal("");
   });
 
   document.getElementById("produtos-modal").addEventListener("click", (e) => {
-    if (e.target === e.currentTarget) {
-      e.currentTarget.style.display = "none";
-      document.getElementById("modal-busca").value = "";
-      filtrarProdutosModal("");
-    }
-  });
-
-  document.getElementById("modal-busca").addEventListener("input", (e) => {
-    filtrarProdutosModal(e.target.value);
+    if (e.target === e.currentTarget) e.currentTarget.style.display = "none";
   });
 
   // Botão limpar tudo

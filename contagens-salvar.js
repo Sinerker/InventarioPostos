@@ -170,41 +170,61 @@ function mostrarForaLote(prod) {
 // -----------------------------------------------
 // Modal: ver contagens do lote
 // -----------------------------------------------
+let _todasContagens = [];
+
+function _renderContagens(termo) {
+  const q = (termo || "").trim().toLowerCase();
+  const lista = document.getElementById("contagens-modal-lista");
+  const badge = document.getElementById("total-contagens-badge");
+
+  const filtradas = q === ""
+    ? _todasContagens
+    : _todasContagens.filter((r) =>
+        (r.desccompleta || "").toLowerCase().includes(q) ||
+        String(r.codacesso).toLowerCase().includes(q)
+      );
+
+  if (badge) badge.textContent = filtradas.length;
+
+  if (filtradas.length === 0) {
+    lista.innerHTML = q
+      ? `<p style="color:var(--clr-text-secondary);font-size:.9rem">Nenhum produto encontrado para "${termo}".</p>`
+      : `<p style="color:var(--clr-text-secondary);font-size:.9rem">Nenhuma contagem registrada ainda.</p>`;
+    return;
+  }
+
+  lista.innerHTML = filtradas.map((r) => {
+    const hora = r.dataHora ? new Date(r.dataHora).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" }) : "";
+    const local = [r.corredor, r.coluna, r.andar].filter(Boolean).join("-");
+    return `
+      <div class="cnt-log-item">
+        <div class="cnt-log-desc">${r.desccompleta || r.codacesso}</div>
+        <div class="cnt-log-info">
+          COD: ${r.codacesso} · EMB: ${r.qtdeembalagem}
+          ${local ? ` · ${local}` : ""} · ${hora}
+        </div>
+        <div class="cnt-log-qty">Qtd: ${r.quantidade}</div>
+      </div>`;
+  }).join("");
+}
+
 async function abrirModalContagens() {
   if (!loteAtual) return;
   const db = await abrirDB();
   if (!db.objectStoreNames.contains("contagens")) { db.close(); return; }
 
   const tx = db.transaction(["contagens"], "readonly");
-  // Usa índice para buscar só as contagens do lote atual
   const req = tx.objectStore("contagens").index("loteNome").getAll(loteAtual.nome);
   req.onsuccess = () => {
     db.close();
-    const todas = (req.result || []).sort((a, b) => new Date(b.dataHora) - new Date(a.dataHora));
+    _todasContagens = (req.result || []).sort((a, b) => new Date(b.dataHora) - new Date(a.dataHora));
 
-    const lista = document.getElementById("contagens-modal-lista");
-    const badge = document.getElementById("total-contagens-badge");
-    if (badge) badge.textContent = todas.length;
-
-    if (todas.length === 0) {
-      lista.innerHTML = `<p style="color:var(--clr-text-secondary);font-size:.9rem">Nenhuma contagem registrada ainda.</p>`;
-    } else {
-      lista.innerHTML = todas.map((r) => {
-        const hora = r.dataHora ? new Date(r.dataHora).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" }) : "";
-        const local = [r.corredor, r.coluna, r.andar].filter(Boolean).join("-");
-        return `
-          <div class="cnt-log-item">
-            <div class="cnt-log-desc">${r.desccompleta || r.codacesso}</div>
-            <div class="cnt-log-info">
-              COD: ${r.codacesso} · EMB: ${r.qtdeembalagem}
-              ${local ? ` · ${local}` : ""} · ${hora}
-            </div>
-            <div class="cnt-log-qty">Qtd: ${r.quantidade}</div>
-          </div>`;
-      }).join("");
-    }
+    const busca = document.getElementById("contagens-busca");
+    if (busca) busca.value = "";
+    _renderContagens("");
 
     document.getElementById("contagens-modal").style.display = "flex";
+    if (busca) busca.focus();
   };
   req.onerror = () => db.close();
 }
@@ -553,10 +573,20 @@ document.addEventListener("DOMContentLoaded", async () => {
 
   document.getElementById("contagens-modal-close")?.addEventListener("click", () => {
     document.getElementById("contagens-modal").style.display = "none";
+    const busca = document.getElementById("contagens-busca");
+    if (busca) { busca.value = ""; _renderContagens(""); }
   });
 
   document.getElementById("contagens-modal")?.addEventListener("click", (e) => {
-    if (e.target === e.currentTarget) e.currentTarget.style.display = "none";
+    if (e.target === e.currentTarget) {
+      e.currentTarget.style.display = "none";
+      const busca = document.getElementById("contagens-busca");
+      if (busca) { busca.value = ""; _renderContagens(""); }
+    }
+  });
+
+  document.getElementById("contagens-busca")?.addEventListener("input", (e) => {
+    _renderContagens(e.target.value);
   });
 
   document.addEventListener("touchstart", () => {
