@@ -406,7 +406,14 @@ document.addEventListener("DOMContentLoaded", () => {
 
     try {
       const db = await abrirDB();
-      const tx = db.transaction(["lotes"], "readwrite");
+      const tx = db.transaction(["lotes", "contagens"], "readwrite");
+
+      // Apaga as contagens anteriores do lote (se existir)
+      const reqContagens = tx.objectStore("contagens").index("loteNome").getAll(nomeLote);
+      reqContagens.onsuccess = () => {
+        const storeC = tx.objectStore("contagens");
+        (reqContagens.result || []).forEach((r) => storeC.delete(r.id));
+      };
 
       tx.objectStore("lotes").put({
         nome: nomeLote,
