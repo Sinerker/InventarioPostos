@@ -90,6 +90,9 @@ a {
   background: linear-gradient(135deg, var(--clr-primary) 0%, var(--clr-primary-dark) 100%);
   color: var(--clr-text-on-primary);
   padding: 0 1rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
   position: sticky;
   top: 0;
   z-index: 100;
@@ -115,6 +118,25 @@ a {
   font-size: 1.2rem;
   font-weight: 600;
   letter-spacing: 0.02em;
+}
+
+.header-manual-link {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  color: rgba(255,255,255,0.8);
+  text-decoration: none;
+  font-size: 0.82rem;
+  font-weight: 500;
+  padding: 0.4rem 0.7rem;
+  border-radius: 6px;
+  transition: background .15s, color .15s;
+  flex-shrink: 0;
+}
+
+.header-manual-link:hover {
+  background: rgba(255,255,255,0.15);
+  color: #fff;
 }
 
 /* =============================================
