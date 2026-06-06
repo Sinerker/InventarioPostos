@@ -11,7 +11,11 @@ let produtoSelecionado = null; // produto atualmente exibido na tela
 // Sons via Web Audio API
 // -----------------------------------------------
 const audioCtx = (() => {
-  try { return new (window.AudioContext || window.webkitAudioContext)(); } catch { return null; }
+  try {
+    return new (window.AudioContext || window.webkitAudioContext)();
+  } catch {
+    return null;
+  }
 })();
 
 function tocarSom(tipo) {
@@ -24,7 +28,7 @@ function tocarSom(tipo) {
   if (tipo === "sucesso") {
     osc.frequency.setValueAtTime(880, audioCtx.currentTime);
     osc.frequency.setValueAtTime(1100, audioCtx.currentTime + 0.08);
-    gain.gain.setValueAtTime(0.15, audioCtx.currentTime);
+    gain.gain.setValueAtTime(5, audioCtx.currentTime);
     gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.25);
     osc.start(audioCtx.currentTime);
     osc.stop(audioCtx.currentTime + 0.25);
@@ -32,7 +36,7 @@ function tocarSom(tipo) {
     osc.type = "sawtooth";
     osc.frequency.setValueAtTime(220, audioCtx.currentTime);
     osc.frequency.setValueAtTime(180, audioCtx.currentTime + 0.1);
-    gain.gain.setValueAtTime(0.15, audioCtx.currentTime);
+    gain.gain.setValueAtTime(5, audioCtx.currentTime);
     gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.3);
     osc.start(audioCtx.currentTime);
     osc.stop(audioCtx.currentTime + 0.3);
@@ -55,7 +59,10 @@ function abrirDB() {
       }
 
       if (!db.objectStoreNames.contains("contagens")) {
-        const store = db.createObjectStore("contagens", { keyPath: "id", autoIncrement: true });
+        const store = db.createObjectStore("contagens", {
+          keyPath: "id",
+          autoIncrement: true,
+        });
         store.createIndex("loteNome", "loteNome", { unique: false });
       } else if (e.oldVersion < 2) {
         // Migração v1 → v2: adiciona índice na store existente
@@ -77,7 +84,10 @@ function abrirDB() {
 async function carregarProdutosDoLote() {
   const loteNome = sessionStorage.getItem("loteAtivo");
   const db = await abrirDB();
-  if (!db.objectStoreNames.contains("lotes")) { db.close(); return; }
+  if (!db.objectStoreNames.contains("lotes")) {
+    db.close();
+    return;
+  }
 
   return new Promise((resolve) => {
     const tx = db.transaction(["lotes"], "readonly");
@@ -87,11 +97,17 @@ async function carregarProdutosDoLote() {
       const lotes = req.result || [];
       let lote = loteNome ? lotes.find((l) => l.nome === loteNome) : null;
       if (!lote && lotes.length > 0) lote = lotes[lotes.length - 1]; // fallback: último lote
-      if (!lote) { resolve(); return; }
+      if (!lote) {
+        resolve();
+        return;
+      }
 
       loteAtual = { nome: lote.nome, usuario: lote.usuario, loja: lote.loja };
       produtosLote = lote.produtos || [];
-      codigosNoLoteSet = new Set((lote.codigosNoLote || produtosLote.map((p) => String(p.CODACESSO).trim())));
+      codigosNoLoteSet = new Set(
+        lote.codigosNoLote ||
+          produtosLote.map((p) => String(p.CODACESSO).trim()),
+      );
 
       const headerNome = document.getElementById("lote-nome-header");
       if (headerNome) headerNome.textContent = lote.nome;
@@ -99,7 +115,10 @@ async function carregarProdutosDoLote() {
       atualizarContagensHeader();
       resolve();
     };
-    req.onerror = () => { db.close(); resolve(); };
+    req.onerror = () => {
+      db.close();
+      resolve();
+    };
   });
 }
 
@@ -107,7 +126,10 @@ async function atualizarContagensHeader() {
   if (!loteAtual) return;
   try {
     const db = await abrirDB();
-    if (!db.objectStoreNames.contains("contagens")) { db.close(); return; }
+    if (!db.objectStoreNames.contains("contagens")) {
+      db.close();
+      return;
+    }
     const tx = db.transaction(["contagens"], "readonly");
     const store = tx.objectStore("contagens");
     // Usa índice para contar só as contagens do lote atual
@@ -144,7 +166,10 @@ function toast(msg, tipo = "erro") {
   `;
   div.textContent = msg;
   document.body.appendChild(div);
-  setTimeout(() => { div.style.opacity = "0"; div.style.transition = "opacity .3s"; }, 1700);
+  setTimeout(() => {
+    div.style.opacity = "0";
+    div.style.transition = "opacity .3s";
+  }, 1700);
   setTimeout(() => div.remove(), 2100);
 }
 
@@ -177,12 +202,14 @@ function _renderContagens(termo) {
   const lista = document.getElementById("contagens-modal-lista");
   const badge = document.getElementById("total-contagens-badge");
 
-  const filtradas = q === ""
-    ? _todasContagens
-    : _todasContagens.filter((r) =>
-        (r.desccompleta || "").toLowerCase().includes(q) ||
-        String(r.codacesso).toLowerCase().includes(q)
-      );
+  const filtradas =
+    q === ""
+      ? _todasContagens
+      : _todasContagens.filter(
+          (r) =>
+            (r.desccompleta || "").toLowerCase().includes(q) ||
+            String(r.codacesso).toLowerCase().includes(q),
+        );
 
   if (badge) badge.textContent = filtradas.length;
 
@@ -193,10 +220,16 @@ function _renderContagens(termo) {
     return;
   }
 
-  lista.innerHTML = filtradas.map((r) => {
-    const hora = r.dataHora ? new Date(r.dataHora).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" }) : "";
-    const local = [r.corredor, r.coluna, r.andar].filter(Boolean).join("-");
-    return `
+  lista.innerHTML = filtradas
+    .map((r) => {
+      const hora = r.dataHora
+        ? new Date(r.dataHora).toLocaleTimeString("pt-BR", {
+            hour: "2-digit",
+            minute: "2-digit",
+          })
+        : "";
+      const local = [r.corredor, r.coluna, r.andar].filter(Boolean).join("-");
+      return `
       <div class="cnt-log-item">
         <div class="cnt-log-desc">${r.desccompleta || r.codacesso}</div>
         <div class="cnt-log-info">
@@ -205,19 +238,28 @@ function _renderContagens(termo) {
         </div>
         <div class="cnt-log-qty">Qtd: ${r.quantidade}</div>
       </div>`;
-  }).join("");
+    })
+    .join("");
 }
 
 async function abrirModalContagens() {
   if (!loteAtual) return;
   const db = await abrirDB();
-  if (!db.objectStoreNames.contains("contagens")) { db.close(); return; }
+  if (!db.objectStoreNames.contains("contagens")) {
+    db.close();
+    return;
+  }
 
   const tx = db.transaction(["contagens"], "readonly");
-  const req = tx.objectStore("contagens").index("loteNome").getAll(loteAtual.nome);
+  const req = tx
+    .objectStore("contagens")
+    .index("loteNome")
+    .getAll(loteAtual.nome);
   req.onsuccess = () => {
     db.close();
-    _todasContagens = (req.result || []).sort((a, b) => new Date(b.dataHora) - new Date(a.dataHora));
+    _todasContagens = (req.result || []).sort(
+      (a, b) => new Date(b.dataHora) - new Date(a.dataHora),
+    );
 
     const busca = document.getElementById("contagens-busca");
     if (busca) busca.value = "";
@@ -306,7 +348,9 @@ function isProbablyCode(txt) {
 }
 
 function buscarPorCodigo(v) {
-  return produtosLote.filter((p) => String(p.CODACESSO || "").trim() === v.trim());
+  return produtosLote.filter(
+    (p) => String(p.CODACESSO || "").trim() === v.trim(),
+  );
 }
 
 function buscarPorNome(v) {
@@ -322,19 +366,29 @@ function buscarPorNome(v) {
 // -----------------------------------------------
 async function somaExistentes(prod) {
   const db = await abrirDB();
-  if (!db.objectStoreNames.contains("contagens")) { db.close(); return 0; }
+  if (!db.objectStoreNames.contains("contagens")) {
+    db.close();
+    return 0;
+  }
   return new Promise((resolve) => {
     const tx = db.transaction(["contagens"], "readonly");
-    const req = tx.objectStore("contagens").index("loteNome").getAll(loteAtual?.nome);
+    const req = tx
+      .objectStore("contagens")
+      .index("loteNome")
+      .getAll(loteAtual?.nome);
     req.onsuccess = () => {
       db.close();
       const soma = (req.result || []).reduce((acc, r) => {
-        if (String(r.codacesso) === String(prod.CODACESSO)) acc += Number(r.quantidade) || 0;
+        if (String(r.codacesso) === String(prod.CODACESSO))
+          acc += Number(r.quantidade) || 0;
         return acc;
       }, 0);
       resolve(soma);
     };
-    req.onerror = () => { db.close(); resolve(0); };
+    req.onerror = () => {
+      db.close();
+      resolve(0);
+    };
   });
 }
 
@@ -353,8 +407,14 @@ async function salvarContagem(record) {
   const tx = db.transaction(["contagens"], "readwrite");
   tx.objectStore("contagens").add(record);
   return new Promise((resolve, reject) => {
-    tx.oncomplete = () => { db.close(); resolve(); };
-    tx.onerror = (e) => { db.close(); reject(e.target.error); };
+    tx.oncomplete = () => {
+      db.close();
+      resolve();
+    };
+    tx.onerror = (e) => {
+      db.close();
+      reject(e.target.error);
+    };
   });
 }
 
@@ -363,7 +423,10 @@ async function salvarContagem(record) {
 // -----------------------------------------------
 function focusCodigo() {
   const c = document.getElementById("codigo");
-  if (c) { c.focus(); c.select(); }
+  if (c) {
+    c.focus();
+    c.select();
+  }
 }
 
 function focusQuantidade() {
@@ -373,11 +436,15 @@ function focusQuantidade() {
     q.setAttribute("inputmode", "none");
     q.focus();
     q.select();
-    q.addEventListener("click", function () {
-      q.setAttribute("inputmode", "decimal");
-      q.blur();
-      q.focus();
-    }, { once: true });
+    q.addEventListener(
+      "click",
+      function () {
+        q.setAttribute("inputmode", "decimal");
+        q.blur();
+        q.focus();
+      },
+      { once: true },
+    );
   } else {
     q.focus();
     q.select();
@@ -411,7 +478,8 @@ async function onCodigoEnter(e) {
         produtoSelecionado = null;
         return focusCodigo();
       }
-      document.getElementById("resultado").innerHTML = `<div class="cnt-error-msg">Nenhum produto encontrado</div>`;
+      document.getElementById("resultado").innerHTML =
+        `<div class="cnt-error-msg">Nenhum produto encontrado</div>`;
       produtoSelecionado = null;
       tocarSom("erro");
       return focusCodigo();
@@ -427,12 +495,12 @@ async function onCodigoEnter(e) {
       await preencherSoma(p);
       focusQuantidade();
     }
-
   } else {
     const r = buscarPorNome(v);
 
     if (r.length === 0) {
-      document.getElementById("resultado").innerHTML = `<div class="cnt-error-msg">Nenhum produto encontrado</div>`;
+      document.getElementById("resultado").innerHTML =
+        `<div class="cnt-error-msg">Nenhum produto encontrado</div>`;
       produtoSelecionado = null;
       tocarSom("erro");
       return focusCodigo();
@@ -457,8 +525,8 @@ async function onConfirmarQuantidade() {
   const resultado = document.getElementById("resultado");
 
   const corredor = document.getElementById("corredor")?.value.trim();
-  const coluna   = document.getElementById("coluna")?.value.trim();
-  const andar    = document.getElementById("andar")?.value.trim();
+  const coluna = document.getElementById("coluna")?.value.trim();
+  const andar = document.getElementById("andar")?.value.trim();
 
   // Fix: removida verificação redundante (coluna === "" já coberta por !coluna)
   if (!corredor || !coluna || !andar) {
@@ -494,22 +562,24 @@ async function onConfirmarQuantidade() {
   }
 
   const reg = {
-    loteNome:      loteAtual?.nome || null,
-    usuario:       loteAtual?.usuario || null,
-    loja:          loteAtual?.loja || null,
-    tipoContagem:  document.querySelector("input[name='tipo-contagem']:checked")?.value || "",
+    loteNome: loteAtual?.nome || null,
+    usuario: loteAtual?.usuario || null,
+    loja: loteAtual?.loja || null,
+    tipoContagem:
+      document.querySelector("input[name='tipo-contagem']:checked")?.value ||
+      "",
     corredor,
     coluna,
     andar,
-    seqproduto:    prod.SEQPRODUTO,
-    desccompleta:  prod.DESCCOMPLETA,
-    codacesso:     prod.CODACESSO,
+    seqproduto: prod.SEQPRODUTO,
+    desccompleta: prod.DESCCOMPLETA,
+    codacesso: prod.CODACESSO,
     qtdeembalagem: prod.QTDEMBALAGEM,
-    quantidade:    qtd,
+    quantidade: qtd,
     dataHora: (() => {
       const d = new Date();
       const pad = (n) => String(n).padStart(2, "0");
-      return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
+      return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
     })(),
   };
 
@@ -524,7 +594,7 @@ async function onConfirmarQuantidade() {
     produtoSelecionado = null;
 
     const chk = document.getElementById("qtde1");
-    qtdEl.value = (chk && chk.checked) ? "1" : "";
+    qtdEl.value = chk && chk.checked ? "1" : "";
     focusCodigo();
   } catch (err) {
     console.error("Erro ao salvar:", err);
@@ -562,26 +632,40 @@ document.addEventListener("DOMContentLoaded", async () => {
   setupCheckboxQtde1();
 
   const codigo = document.getElementById("codigo");
-  const qtd    = document.getElementById("quantidade");
+  const qtd = document.getElementById("quantidade");
 
   if (codigo) codigo.addEventListener("keydown", onCodigoEnter);
-  if (qtd)    qtd.addEventListener("keydown", (e) => {
-    if (e.key === "Enter") { e.preventDefault(); onConfirmarQuantidade(); }
-  });
+  if (qtd)
+    qtd.addEventListener("keydown", (e) => {
+      if (e.key === "Enter") {
+        e.preventDefault();
+        onConfirmarQuantidade();
+      }
+    });
 
-  document.getElementById("ver-contagens-btn")?.addEventListener("click", abrirModalContagens);
+  document
+    .getElementById("ver-contagens-btn")
+    ?.addEventListener("click", abrirModalContagens);
 
-  document.getElementById("contagens-modal-close")?.addEventListener("click", () => {
-    document.getElementById("contagens-modal").style.display = "none";
-    const busca = document.getElementById("contagens-busca");
-    if (busca) { busca.value = ""; _renderContagens(""); }
-  });
+  document
+    .getElementById("contagens-modal-close")
+    ?.addEventListener("click", () => {
+      document.getElementById("contagens-modal").style.display = "none";
+      const busca = document.getElementById("contagens-busca");
+      if (busca) {
+        busca.value = "";
+        _renderContagens("");
+      }
+    });
 
   document.getElementById("contagens-modal")?.addEventListener("click", (e) => {
     if (e.target === e.currentTarget) {
       e.currentTarget.style.display = "none";
       const busca = document.getElementById("contagens-busca");
-      if (busca) { busca.value = ""; _renderContagens(""); }
+      if (busca) {
+        busca.value = "";
+        _renderContagens("");
+      }
     }
   });
 
@@ -589,7 +673,11 @@ document.addEventListener("DOMContentLoaded", async () => {
     _renderContagens(e.target.value);
   });
 
-  document.addEventListener("touchstart", () => {
-    if (audioCtx && audioCtx.state === "suspended") audioCtx.resume();
-  }, { once: true });
+  document.addEventListener(
+    "touchstart",
+    () => {
+      if (audioCtx && audioCtx.state === "suspended") audioCtx.resume();
+    },
+    { once: true },
+  );
 });
