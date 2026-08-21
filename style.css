@@ -817,3 +817,32 @@ body.focus-locked .tree-node-header,
 body.focus-locked .tree-toggle {
   pointer-events: auto;
 }
+
+/* =============================================
+   SITUAÇÃO DO CADASTRO
+   ============================================= */
+.cadastro-status {
+  font-size: 0.82rem;
+  color: var(--clr-text-secondary);
+  padding: 0 0.35rem;
+  margin: -0.35rem 0 0.1rem;
+  line-height: 1.4;
+}
+
+.cadastro-status--aviso {
+  color: var(--clr-warning);
+  font-weight: 600;
+}
+
+.cadastro-status--erro {
+  color: var(--clr-danger);
+  font-weight: 600;
+}
+
+/* Rodapé das listas que carregam conforme a rolagem */
+.lista-sentinela {
+  padding: 0.9rem 0.25rem;
+  font-size: 0.82rem;
+  color: var(--clr-text-secondary);
+  text-align: center;
+}

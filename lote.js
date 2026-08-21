@@ -210,6 +210,69 @@ async function renderizarLotes() {
 }
 
 // -----------------------------------------------
+// Listagem de produtos em levas
+// -----------------------------------------------
+// Um lote pode ter dezenas de milhares de itens e a aba
+// "fora do lote" chega perto de 148 mil. Montar isso de uma
+// vez congela o aparelho — então a lista cresce conforme
+// o dedo desce.
+const ITENS_POR_LEVA = 200;
+
+function escaparHTML(s) {
+  return String(s == null ? "" : s)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;");
+}
+
+function produtoItemHTML(p) {
+  return `<div class="produto-item">
+          <div class="produto-item-desc">${escaparHTML(p.DESCCOMPLETA)}</div>
+          <div class="produto-item-info">SEQ: ${escaparHTML(p.SEQPRODUTO)} · COD: ${escaparHTML(p.CODACESSO)} · EMB: ${escaparHTML(p.QTDEMBALAGEM)}</div>
+        </div>`;
+}
+
+function renderizarEmLevas(container, quantidade, obterProduto, vazio) {
+  container.innerHTML = "";
+
+  if (!quantidade) {
+    container.innerHTML = `<p style='color:var(--clr-text-secondary);font-size:.9rem'>${vazio}</p>`;
+    return;
+  }
+
+  let mostrados = 0;
+
+  const sentinela = document.createElement("div");
+  sentinela.className = "lista-sentinela";
+  container.appendChild(sentinela);
+
+  const proximaLeva = () => {
+    const fim = Math.min(mostrados + ITENS_POR_LEVA, quantidade);
+    let html = "";
+    for (let i = mostrados; i < fim; i++) html += produtoItemHTML(obterProduto(i));
+    sentinela.insertAdjacentHTML("beforebegin", html);
+    mostrados = fim;
+
+    if (mostrados >= quantidade) {
+      observador.disconnect();
+      sentinela.remove();
+    } else {
+      sentinela.textContent = `Mostrando ${mostrados.toLocaleString("pt-BR")} de ${quantidade.toLocaleString("pt-BR")} — role para ver mais`;
+    }
+  };
+
+  const observador = new IntersectionObserver(
+    (entradas) => {
+      if (entradas.some((e) => e.isIntersecting)) proximaLeva();
+    },
+    { root: container.parentElement, rootMargin: "400px" }
+  );
+
+  observador.observe(sentinela);
+  proximaLeva();
+}
+
+// -----------------------------------------------
 // Modal de produtos do lote
 // -----------------------------------------------
 async function abrirModalProdutos(loteNome, abaInicial = "dentro") {
@@ -226,35 +289,34 @@ async function abrirModalProdutos(loteNome, abaInicial = "dentro") {
   const produtosDentro = lote.produtos || [];
   const codigosNoLote = new Set((lote.codigosNoLote || []).map(String));
 
-  let produtosFora = [];
-  if (typeof dadosCSV !== "undefined" && dadosCSV.length > 0) {
-    produtosFora = dadosCSV.filter((p) => !codigosNoLote.has(String(p.CODACESSO).trim()));
+  // Índices dos produtos do cadastro que NÃO estão no lote.
+  // Guarda só os números — os dados de cada linha só são lidos
+  // quando aquele item aparece na tela.
+  let indicesFora = [];
+  if (cadastro.pronto) {
+    for (let i = 0; i < cadastro.total; i++) {
+      if (!codigosNoLote.has(cadastro.codigo(i))) indicesFora.push(i);
+    }
   }
 
   const modal = document.getElementById("produtos-modal");
   document.getElementById("produtos-modal-title").textContent = loteNome;
   document.getElementById("count-dentro").textContent = produtosDentro.length;
-  document.getElementById("count-fora").textContent = produtosFora.length || "?";
+  document.getElementById("count-fora").textContent = cadastro.pronto ? indicesFora.length : "?";
 
-  const listaDentro = document.getElementById("lista-dentro");
-  listaDentro.innerHTML = produtosDentro.length === 0
-    ? "<p style='color:var(--clr-text-secondary);font-size:.9rem'>Nenhum produto</p>"
-    : produtosDentro.map((p) => `
-        <div class="produto-item">
-          <div class="produto-item-desc">${p.DESCCOMPLETA || ""}</div>
-          <div class="produto-item-info">SEQ: ${p.SEQPRODUTO} · COD: ${p.CODACESSO} · EMB: ${p.QTDEMBALAGEM}</div>
-        </div>`).join("");
+  renderizarEmLevas(
+    document.getElementById("lista-dentro"),
+    produtosDentro.length,
+    (i) => produtosDentro[i],
+    "Nenhum produto"
+  );
 
-  const listaFora = document.getElementById("lista-fora");
-  if (produtosFora.length === 0) {
-    listaFora.innerHTML = "<p style='color:var(--clr-text-secondary);font-size:.9rem'>Carregue o CSV na tela inicial para ver os produtos fora do lote.</p>";
-  } else {
-    listaFora.innerHTML = produtosFora.map((p) => `
-      <div class="produto-item">
-        <div class="produto-item-desc">${p.DESCCOMPLETA || ""}</div>
-        <div class="produto-item-info">SEQ: ${p.SEQPRODUTO} · COD: ${p.CODACESSO} · EMB: ${p.QTDEMBALAGEM}</div>
-      </div>`).join("");
-  }
+  renderizarEmLevas(
+    document.getElementById("lista-fora"),
+    indicesFora.length,
+    (i) => cadastro.produto(indicesFora[i]),
+    "Carregue o cadastro na tela inicial para ver os produtos fora do lote."
+  );
 
   document.querySelectorAll(".tab-btn").forEach((btn) => {
     btn.classList.toggle("active", btn.dataset.tab === abaInicial);
@@ -319,12 +381,20 @@ document.addEventListener("DOMContentLoaded", () => {
     const ok2 = await exibirConfirmacao("Confirmação Final", "⚠️ Esta ação é irreversível! Deseja realmente apagar tudo?");
     if (!ok2) return;
 
-    const dbs = await indexedDB.databases();
+    // Apaga lotes e contagens, mas preserva o cache do cadastro:
+    // ele não é dado do usuário e baixá-lo de novo custa tempo e
+    // internet no meio da rua.
+    const dbs = typeof indexedDB.databases === "function"
+      ? await indexedDB.databases()
+      : [{ name: "InventarioDB" }];
+
     for (const dbInfo of dbs) {
+      if (!dbInfo.name || dbInfo.name === DB_CADASTRO) continue;
       await new Promise((res) => {
         const r = indexedDB.deleteDatabase(dbInfo.name);
         r.onsuccess = res;
         r.onerror = res;
+        r.onblocked = res;
       });
     }
     localStorage.removeItem("estadoContagem");
@@ -334,8 +404,8 @@ document.addEventListener("DOMContentLoaded", () => {
 
   // Botão criar lote
   document.getElementById("criar-lote").addEventListener("click", async () => {
-    if (!dadosCSV || dadosCSV.length === 0) {
-      alert("O arquivo CSV ainda não foi carregado. Verifique se o arquivo 'embalagens com categorias.csv' está na pasta correta.");
+    if (!cadastro.pronto) {
+      alert("O cadastro ainda não foi carregado. Aguarde a mensagem 'Cadastro de …' aparecer abaixo do título, ou conecte-se à internet e abra o app novamente.");
       return;
     }
 
@@ -372,36 +442,42 @@ document.addEventListener("DOMContentLoaded", () => {
       if (!ok) return;
     }
 
-    const produtosFiltrados = [];
-    const codigosNoLote = [];
+    // Quais categorias entram — comparação feita uma vez sobre os
+    // ~3.000 caminhos existentes, não 148 mil vezes por produto.
+    const marcadas = cadastro.categoriasSelecionadas(categoriasSelecionadas);
 
-    for (const produto of dadosCSV) {
-      const niveis = [];
-      for (let i = 0; i <= 7; i++) {
-        const v = produto[`NIVEL ${i}`];
-        if (!v) break;
-        niveis.push(v);
-      }
-      const caminho = niveis.join(" > ");
-      if (categoriasSelecionadas.some((cat) => caminho.startsWith(cat))) {
-        const cod = String(produto.CODACESSO || "").trim();
-        produtosFiltrados.push({
-          SEQPRODUTO: produto.SEQPRODUTO,
-          DESCCOMPLETA: produto.DESCCOMPLETA,
-          CODACESSO: produto.CODACESSO,
-          QTDEMBALAGEM: produto.QTDEMBALAGEM,
-        });
-        if (cod) codigosNoLote.push(cod);
-      }
+    // Varredura só com números: nada de texto nesta passada.
+    const indices = [];
+    const cats = cadastro.cats;
+    for (let i = 0; i < cadastro.total; i++) {
+      if (marcadas[cats[i]]) indices.push(i);
     }
 
-    if (produtosFiltrados.length === 0) {
+    if (indices.length === 0) {
       alert("Nenhum produto encontrado nas categorias selecionadas.");
       return;
     }
 
     const btnCriar = document.getElementById("criar-lote");
     btnCriar.disabled = true;
+    btnCriar.textContent = "Preparando...";
+
+    // Só agora lê o texto de cada produto escolhido, em blocos,
+    // devolvendo o controle para a tela entre um bloco e outro.
+    const produtosFiltrados = new Array(indices.length);
+    const codigosNoLote = [];
+
+    for (let k = 0; k < indices.length; k++) {
+      const p = cadastro.produto(indices[k]);
+      produtosFiltrados[k] = p;
+      if (p.CODACESSO) codigosNoLote.push(p.CODACESSO);
+
+      if ((k & 8191) === 8191) {
+        btnCriar.textContent = `Preparando... ${Math.round(((k + 1) * 100) / indices.length)}%`;
+        await new Promise((r) => setTimeout(r, 0));
+      }
+    }
+
     btnCriar.textContent = "Salvando...";
 
     try {
@@ -423,7 +499,8 @@ document.addEventListener("DOMContentLoaded", () => {
         dataCriacao: new Date().toISOString(),
         produtos: produtosFiltrados,
         codigosNoLote,
-        totalCSV: dadosCSV.length,
+        totalCSV: cadastro.total,
+        versaoCadastro: cadastro.dataISO,
       });
 
       tx.oncomplete = () => {

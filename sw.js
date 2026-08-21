@@ -2,24 +2,24 @@
    sw.js — Service Worker do app Inventário
    =============================================
    Estratégia:
-   - App shell (HTML/CSS/JS/ícones): cache-first,
-     com nome de cache versionado. Suba CACHE_VERSION
-     a cada deploy para forçar todo mundo a atualizar.
-   - CSV de produtos: stale-while-revalidate — serve
-     o que já está em cache na hora (rápido, funciona
-     offline) e, em paralelo, busca a versão nova na
-     rede para deixar pronta na próxima abertura.
-   - skipWaiting + clients.claim: garante que a versão
-     nova assume o controle imediatamente, sem precisar
-     fechar todas as abas antes de atualizar.
+   - App shell (HTML/CSS/JS/ícones): stale-while-revalidate.
+     Entrega o que está em cache na hora (app abre instantâneo,
+     funciona offline) e busca a versão nova em paralelo, que
+     passa a valer na próxima abertura. Assim, mesmo que você
+     esqueça de subir o CACHE_VERSION, a correção chega sozinha.
+   - CSV de produtos: NÃO passa mais por aqui. Quem cuida dele
+     é o script.js, que guarda o cadastro já convertido dentro
+     do IndexedDB. Antes o mesmo cadastro ocupava espaço duas
+     vezes (19 MB de texto no cache + os dados na memória) e só
+     atualizava na segunda abertura.
+   - skipWaiting + clients.claim: a versão nova assume o controle
+     imediatamente, sem precisar fechar todas as abas.
    ============================================= */
 
-// IMPORTANTE: mude este número a cada deploy novo.
-// Isso invalida o cache antigo e força o app a buscar
-// os arquivos atualizados.
-const CACHE_VERSION = "v1";
+// Suba este número quando quiser forçar a troca imediata em
+// todo mundo. Com stale-while-revalidate isso virou opcional.
+const CACHE_VERSION = "v2";
 const CACHE_NAME = `inventario-shell-${CACHE_VERSION}`;
-const CSV_CACHE_NAME = `inventario-csv-${CACHE_VERSION}`;
 
 // Arquivos do "esqueleto" do app — baixados e cacheados
 // na instalação, para o app abrir mesmo sem internet.
@@ -29,10 +29,12 @@ const APP_SHELL = [
   "./contagens.html",
   "./manual.html",
   "./script.js",
+  "./cadastro-worker.js",
   "./lote.js",
   "./contagens.js",
   "./contagens-salvar.js",
   "./contagens-exportar.js",
+  "./pwa-registro.js",
   "./style.css",
   "./style-contagens.css",
   "./manifest.json",
@@ -43,8 +45,8 @@ const APP_SHELL = [
   "./icons/apple-touch-icon.png",
 ];
 
-// Nome do arquivo do CSV — usado para identificar
-// a requisição independente de vir local ou do GitHub raw.
+// O cadastro é grande e tem cache próprio no IndexedDB.
+// Se aparecer aqui, é para deixar passar direto para a rede.
 const CSV_FILENAME = "embalagens com categorias.csv";
 
 // -----------------------------------------------
@@ -61,7 +63,8 @@ self.addEventListener("install", (event) => {
 });
 
 // -----------------------------------------------
-// Activate: apaga caches de versões antigas e
+// Activate: apaga caches de versões antigas (inclusive o
+// antigo cache do CSV, liberando ~19 MB no aparelho) e
 // assume o controle das páginas já abertas
 // -----------------------------------------------
 self.addEventListener("activate", (event) => {
@@ -70,11 +73,7 @@ self.addEventListener("activate", (event) => {
       .keys()
       .then((nomes) =>
         Promise.all(
-          nomes
-            .filter(
-              (nome) => nome !== CACHE_NAME && nome !== CSV_CACHE_NAME
-            )
-            .map((nome) => caches.delete(nome))
+          nomes.filter((nome) => nome !== CACHE_NAME).map((nome) => caches.delete(nome))
         )
       )
       .then(() => self.clients.claim())
@@ -91,51 +90,47 @@ self.addEventListener("fetch", (event) => {
   if (req.method !== "GET") return;
 
   const url = new URL(req.url);
-  const ehCSV = decodeURIComponent(url.pathname).includes(CSV_FILENAME);
 
-  if (ehCSV) {
-    event.respondWith(staleWhileRevalidateCSV(req));
-    return;
-  }
+  // Outra origem (raw do GitHub, por exemplo): não é problema nosso
+  if (url.origin !== self.location.origin) return;
 
-  // App shell: cache-first, com fallback pra rede
-  event.respondWith(
-    caches.match(req).then((cached) => {
-      if (cached) return cached;
-      return fetch(req).catch(() => cached);
-    })
-  );
+  // O cadastro vai direto para a rede — o app tem cache próprio dele
+  if (decodeURIComponent(url.pathname).includes(CSV_FILENAME)) return;
+
+  event.respondWith(staleWhileRevalidate(req));
 });
 
 // -----------------------------------------------
-// Estratégia stale-while-revalidate para o CSV
+// Entrega o cache na hora e renova por baixo
 // -----------------------------------------------
-async function staleWhileRevalidateCSV(req) {
-  const cache = await caches.open(CSV_CACHE_NAME);
+async function staleWhileRevalidate(req) {
+  const cache = await caches.open(CACHE_NAME);
   const cached = await cache.match(req);
 
-  const buscarNaRede = fetch(req)
+  const daRede = fetch(req)
     .then((resp) => {
-      // Só atualiza o cache se a resposta for válida
-      if (resp && resp.ok) {
+      if (resp && resp.ok && resp.type === "basic") {
         cache.put(req, resp.clone());
       }
       return resp;
     })
     .catch(() => null);
 
-  // Se já tem em cache, responde na hora e atualiza em segundo plano.
   if (cached) {
-    buscarNaRede; // dispara sem esperar (atualiza pra próxima vez)
+    daRede; // renova em segundo plano, sem segurar a resposta
     return cached;
   }
 
-  // Sem cache ainda (primeira vez): espera a rede.
-  const resp = await buscarNaRede;
+  const resp = await daRede;
   if (resp) return resp;
 
-  // Sem cache e sem rede: não tem o que responder.
-  return new Response("CSV indisponível offline e sem conexão.", {
+  // Sem cache e sem rede: se for navegação, cai na tela inicial
+  if (req.mode === "navigate") {
+    const inicio = await cache.match("./index.html");
+    if (inicio) return inicio;
+  }
+
+  return new Response("Conteúdo indisponível offline.", {
     status: 503,
     statusText: "Service Unavailable",
   });
